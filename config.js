@@ -3,5 +3,5 @@
 // anonKey: the "anon" public key from Supabase > Project Settings > API Keys (starts with eyJ)
 window.ATLAS95_SUPABASE = {
   url: "https://YOUR-PROJECT-ID.supabase.co",
-  anonKey: "PASTE_YOUR_SUPABASE_ANON_KEY"
+  anonKey: "sb_publishable_vlSmgIMoOEB3KKCfEaaddQ_bhNCJvct"
 };
