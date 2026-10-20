@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%227%22%20fill%3D%22%233a6ea5%22%20stroke%3D%22%23000%22%2F%3E%3Cpath%20d%3D%22M4%204.5c1.5-.5%202.5.5%203%201.5s-1%202-.5%203%202%20.5%202%202-1%202.5-2%202.5M10%202.5c0%201.5%201.5%202%202.5%202.5s1%202%20.5%203%22%20fill%3D%22none%22%20stroke%3D%22%237fd67f%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M1.5%206.5c4%201.5%209%201.5%2013%200%22%20fill%3D%22none%22%20stroke%3D%22%23fc0%22%20stroke-width%3D%221.2%22%2F%3E%3C%2Fsvg%3E">
 <script>window.ATLAS95_SUPABASE={url:"",anonKey:""};window.ATLAS95_PRIVACY_URL="privacy.html";</script>
 <script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 </head>
 <body>
 <title>Atlas Drill</title>
@@ -182,6 +182,20 @@ input#guess:focus{outline:none}
 .sky .klbl.me{font-weight:700;font-size:14px;fill:#ffff00}
 .kpick{display:flex;flex-wrap:wrap;gap:4px;max-height:132px;overflow:auto;padding:2px}
 .kpick .btn{padding:3px 8px;min-height:22px;font-size:12px}
+/* trivia */
+.tvboard{display:grid;gap:4px;width:100%}
+.tvcat{background:var(--title);color:var(--hi);font-weight:700;font-size:12px;text-align:center;padding:6px 3px;display:grid;place-items:center;min-height:42px;line-height:1.15;overflow-wrap:anywhere}
+.tvtile{background:var(--face);border:0;box-shadow:var(--raised);font:700 clamp(15px,3.4vw,24px) var(--ui);color:var(--ink);min-height:54px;cursor:pointer;display:grid;place-items:center}
+.tvtile:active{box-shadow:var(--pressed)}
+.tvtile:focus-visible{outline:1px dotted var(--ink);outline-offset:-6px}
+.tvtile.used{box-shadow:var(--sunken);cursor:default;font-size:18px}
+.tvtile.used.ok{background:#c8f0c8;color:var(--done-ink)}
+.tvtile.used.no{background:#f4c4c4;color:#800}
+.tvq{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.tvqhead{font-size:13px}
+.tvqtext{font-size:clamp(17px,3.3vw,23px);font-weight:700;line-height:1.3;text-align:center;padding:14px 6px}
+.tvbonus{background:var(--target);border:1px solid var(--ink);padding:1px 6px;font-weight:700;font-size:12px}
+@media (max-width:520px){.tvcat{font-size:10.5px;min-height:38px}.tvtile{min-height:46px}}
 /* game layer */
 .gmlsub{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px}
 .gmlsub .btn{text-align:left;padding:5px 8px}
@@ -314,6 +328,8 @@ a.link:visited{color:#551a8b}
 </style>
 
 <div class="desk" id="desk" hidden>
+  <button class="dicon" type="button" data-gm="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" fill="#fff" stroke="#000"/><path d="M1.5 2.5h13v3h-13z" fill="#c00000" stroke="#000"/><path d="M5.8 7.6h4.4v4.4H5.8zM5.8 9.8h4.4M8 7.6v4.4" fill="#ffd800" stroke="#000" stroke-width=".7"/><path d="M4.5 1v3M11.5 1v3" stroke="#000"/></svg><span>Daily Trivia</span></button>
+  <button class="dicon" type="button" data-open="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="1.5" width="15" height="13" fill="#c0c0c0" stroke="#000"/><path d="M5.5 1.5v13M10.5 1.5v13M.5 6h15M.5 10.5h15" stroke="#000"/><path d="M1.5 2.5h3v3h-3z" fill="#ffd800"/><path d="M11.5 7h3v3h-3z" fill="#7fd67f"/><path d="M6.5 11.5h3v2h-3z" fill="#ff8080"/></svg><span>Trivia Board</span></button>
   <button class="dicon" type="button" data-gm="lesson"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5L15 6 8 9.5 1 6z" fill="#000080" stroke="#000" stroke-linejoin="round"/><path d="M4 7.6v3.2c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V7.6L8 9.5z" fill="#3a6ea5" stroke="#000" stroke-linejoin="round"/><path d="M13.6 6.7v4.6" stroke="#c00000" stroke-width="1.2"/><circle cx="13.6" cy="11.8" r="1" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg><span>Daily Lesson</span></button>
   <button class="dicon" type="button" data-gm="daily"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l2.1 4.4 4.8.6-3.5 3.3.9 4.8L8 11.8 3.7 14.1l.9-4.8L1.1 6l4.8-.6z" fill="#ffd800" stroke="#000" stroke-linejoin="round"/></svg><span>Daily Challenge</span></button>
   <button class="dicon" type="button" data-open="scores"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h8v4.5a4 4 0 0 1-8 0z" fill="#ffd800" stroke="#000"/><path d="M4 3H1.5v1.5A2.5 2.5 0 0 0 4.5 7M12 3h2.5v1.5A2.5 2.5 0 0 1 11.5 7" fill="none" stroke="#000"/><path d="M7 10h2v2.5H7z" fill="#ffd800" stroke="#000"/><path d="M4.5 12.5h7v2h-7z" fill="#808080" stroke="#000"/></svg><span>Scoreboard</span></button>
@@ -347,6 +363,19 @@ a.link:visited{color:#551a8b}
   </div>
   <div class="status"><span id="kst1"></span><span id="kst2"></span><span id="kst3"></span></div>
   <div id="kdialog"></div>
+</div>
+
+<div class="win" id="twin" hidden>
+  <div class="titlebar">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="1.5" width="15" height="13" fill="#c0c0c0" stroke="#000"/><path d="M5.5 1.5v13M10.5 1.5v13M.5 6h15M.5 10.5h15" stroke="#000"/><path d="M1.5 2.5h3v3h-3z" fill="#ffd800"/><path d="M11.5 7h3v3h-3z" fill="#7fd67f"/><path d="M6.5 11.5h3v2h-3z" fill="#ff8080"/></svg>
+    <span class="t">Trivia Board</span>
+    <div class="tbtns"><button class="tbtn" type="button" data-min="trivia" aria-label="Minimize">_</button><span class="tbtn" aria-hidden="true">□</span><button class="tbtn" type="button" data-closeapp="trivia" aria-label="Close">✕</button></div>
+  </div>
+  <div class="sheet">
+    <div class="stage" id="tvstage" style="display:block;min-height:260px"></div>
+    <div class="group" id="tvslip"></div>
+  </div>
+  <div class="status"><span id="tvst1"></span><span id="tvst2"></span><span id="tvst3"></span></div>
 </div>
 
 <div class="win" id="swin" hidden>
@@ -2422,7 +2451,7 @@ const gmTitle=L=>GM_TITLES[Math.min(L-1,GM_TITLES.length-1)];
 const GM={set:Object.assign({timer:false,popup:true,topics:null,nick:""},store.get("gm.set")||{}),
   st:store.get("gm.st"),timers:store.get("gm.timers")||{},bestT:store.get("gm.bestT")||{},run:store.get("gm.run")||null,
   tab:"me",lb:"today",share:{},resetArm:false};
-const gmFreshStats=()=>({xp:0,answers:0,first:0,sections:0,perfects:0,apps:{},dailies:{},lessons:{},badges:[],bestStreak:0});
+const gmFreshStats=()=>({xp:0,answers:0,first:0,sections:0,perfects:0,apps:{},dailies:{},lessons:{},trivia:{},badges:[],bestStreak:0});
 let gmSeeded=false;
 if(!GM.st){GM.st=gmFreshStats();gmSeeded=true}
 GM.st=Object.assign(gmFreshStats(),GM.st);
@@ -2440,7 +2469,7 @@ const GM_CUR={
   civics:()=>({key:`civics|${cKey()}`,done:CS().done.size,total:cItems().length,live:C.view==="quiz"&&!!C.target,label:`${cLabel()} (${CSUBJ[C.subj][C.mode]})`}),
   stars:()=>({key:`stars|${kKey()}`,done:KS().done.size,total:kItems().length,live:K.view==="quiz"&&!!K.target,label:`${kLabel()} (${KMODES[K.mode]})`}),
   words:()=>({key:`words|${wKey()}`,done:WS().done.size,total:wItems().length,live:WD.view==="quiz"&&!!WD.target,label:`${wLabel()} (${WMODES[WD.mode]})`})};
-const GM_APPNAME={atlas:"Atlas Drill",guitar:"Fretboard Drill",elements:"Element Drill",phrases:"Language Drill",anatomy:"Anatomy Drill",civics:"Civics Drill",words:"Medical Terms Drill",stars:"Constellation Drill"};
+const GM_APPNAME={atlas:"Atlas Drill",guitar:"Fretboard Drill",elements:"Element Drill",phrases:"Language Drill",anatomy:"Anatomy Drill",civics:"Civics Drill",words:"Medical Terms Drill",stars:"Constellation Drill",trivia:"Trivia Board"};
 
 // ---------- toasts ----------
 function gmToast(html){let box=document.getElementById("gmtoasts");if(!box){box=document.createElement("div");box.id="gmtoasts";box.className="gmtoasts";box.setAttribute("aria-live","polite");document.body.appendChild(box)}
@@ -2464,6 +2493,9 @@ const GM_BADGES=[
   {k:"streak3",emo:"🔥",n:"On a roll",d:"Play the daily 3 days in a row",t:s=>s.bestStreak>=3},
   {k:"streak7",emo:"☄️",n:"On fire",d:"Play the daily 7 days in a row",t:s=>s.bestStreak>=7},
   {k:"streak30",emo:"👑",n:"Unstoppable",d:"Play the daily 30 days in a row",t:s=>s.bestStreak>=30},
+  {k:"trivia1",emo:"🎲",n:"Trivia night",d:"Finish a full Trivia Board",t:s=>(s.tvGames||0)>=1},
+  {k:"trivia6k",emo:"🦉",n:"Know-it-all",d:"Score 6,000+ on a Trivia Board",t:s=>(s.tvBest||0)>=6000},
+  {k:"trivia9",emo:"🎯",n:"Clean sweep",d:"Get all 9 daily trivia tiles right",t:s=>Object.values(s.trivia||{}).some(d=>d.m==="111111111")},
   {k:"lesson1",emo:"🎒",n:"Back to school",d:"Finish a daily lesson",t:s=>s.lessons&&Object.keys(s.lessons).length>=1},
   {k:"lesson7",emo:"📚",n:"Habit formed",d:"Do your daily lesson 7 days in a row",t:()=>typeof gmLesStreak==="function"&&gmLesStreak()>=7},
   {k:"learn50",emo:"🧠",n:"Memory palace",d:"Learn 50 items in daily lessons",t:()=>Object.values(GM.mem||{}).reduce((a,m)=>a+Object.values(m).filter(x=>x.b>=3).length,0)>=50}];
@@ -2618,8 +2650,15 @@ let gmQCache=null;
 const gmQs=()=>{const r=GM.run;const k=r.date+"|"+r.topic;if(!gmQCache||gmQCache.k!==k)gmQCache={k,qs:gmQuestions(r.topic,r.date,{n:5})};return gmQCache.qs};
 function gmTodayTopic(){const en=gmEnabled();return en[gmHash("day|"+gmToday())%en.length]}
 function gmOpenDaily(){setMenu(false);const t=gmToday();if(GM.run&&GM.run.date!==t){GM.run=null;store.set("gm.run",null)}gmRenderDaily()}
-function gmCloseDaily(noChain){if(GM.run)store.set("gm.run",GM.run);gmDailyBox().innerHTML="";buildStart();if(!noChain&&GM.chainLesson){GM.chainLesson=false;setTimeout(()=>{if(!gmDailyOpen()&&!gmLesOpen())gmOpenLesson()},250)}}
-function gmEscape(){if(document.getElementById("gmcopy")&&document.getElementById("gmcopy").innerHTML){document.getElementById("gmcopy").innerHTML="";return}if(gmDailyOpen())gmCloseDaily();else if(gmLesOpen())gmCloseLesson()}
+function gmCloseDaily(noChain){if(GM.run)store.set("gm.run",GM.run);gmDailyBox().innerHTML="";buildStart();if(!noChain)gmChain(!!GM.st.dailies[gmToday()])}
+// pop-ups queue: after finishing one, the next unfinished one opens. Closing one without finishing stops the chain.
+GM.popq=[];
+function gmChain(finished){if(finished&&GM.popq.length)setTimeout(gmNextPopup,250);else GM.popq=[]}
+function gmNextPopup(){const t=gmToday();while(GM.popq.length){const k=GM.popq.shift();
+  if(k==="daily"&&!GM.st.dailies[t]){gmOpenDaily();return}
+  if(k==="trivia"&&!(GM.st.trivia&&GM.st.trivia[t])){gmOpenTrivia();return}
+  if(k==="lesson"&&gmLes()&&!GM.st.lessons[t]){gmOpenLesson();return}}}
+function gmEscape(){if(document.getElementById("gmcopy")&&document.getElementById("gmcopy").innerHTML){document.getElementById("gmcopy").innerHTML="";return}if(gmDailyOpen())gmCloseDaily();else if(gmLesOpen())gmCloseLesson();else if(gmTrivOpen())gmCloseTrivia()}
 const gmMarks=(m,n)=>{let o='<span class="gmmarks" aria-hidden="true">';for(let i=0;i<(n||5);i++){const c=m[i];o+=`<i class="${c==="1"?"ok":c==="0"?"no":""}">${c==="1"?"✓":c==="0"?"✗":""}</i>`}return o+"</span>"};
 function gmDailyFrame(body,title){return `<div class="scrim gmscrim"><div class="dlg wide gmd" role="dialog" aria-modal="true" aria-labelledby="gmdt1"><div class="titlebar">${STAR16}<span class="t" id="gmdt1">${esc(title||"Daily Challenge")} - ${esc(gmNiceDate(gmToday()))}</span><div class="tbtns"><button class="tbtn" type="button" data-gmdclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}</div></div></div>`}
 function gmWheelSVG(list){
@@ -2646,10 +2685,14 @@ function gmRenderDaily(){
 }
 function gmSpin(){
   const box=gmDailyBox(),en=gmEnabled(),pick=gmTodayTopic(),idx=en.indexOf(pick),n=en.length,s=360/n;
-  const jit=(gmRng("jit|"+gmToday())()-.5)*s*0.6,rot=360*6-(idx+.5)*s+jit;
+  const jit=(gmRng("jit|"+gmToday())()-.5)*s*0.6,rot=360*9-(idx+.5)*s+jit;
   const g=box.querySelector("#gmrot"),btn=box.querySelector("#gmspin"),pop=box.querySelector("#gmpop");btn.disabled=true;box.querySelectorAll("[data-gmdclose]").forEach(b=>b.disabled=true);
-  const dur=reduced()?600:4600;g.style.transition=`transform ${dur}ms cubic-bezier(.12,.62,.1,1)`;void g.getBoundingClientRect();g.style.transform=`rotate(${rot}deg)`;
-  let delay=55,stop=false,i=0;const flick=()=>{if(stop)return;const tp=gmTopic(en[(i++*7+3)%n]);pop.className="gmpop flick";pop.innerHTML=`${tp.emo} ${esc(tp.label)}`;delay*=1.09;if(delay<520)setTimeout(flick,delay)};flick();
+  const dur=reduced()?800:7200;g.style.transition=`transform ${dur}ms cubic-bezier(.1,.55,.08,1)`;void g.getBoundingClientRect();g.style.transform=`rotate(${rot}deg)`;
+  // show whichever slice is under the pointer right now
+  let stop=false,last=-1;const show=()=>{if(stop)return;const m=getComputedStyle(g).transform;let ang=0;
+    if(m&&m!=="none"){const v=m.match(/matrix\(([^)]+)\)/);if(v){const [a,b]=v[1].split(",").map(Number);ang=Math.atan2(b,a)*180/Math.PI}}
+    const i=Math.floor((((-ang)%360+360)%360)/s)%n;if(i!==last){last=i;const tp=gmTopic(en[i]);pop.className="gmpop flick";pop.innerHTML=`${tp.emo} ${esc(tp.label)}`}
+    requestAnimationFrame(show)};requestAnimationFrame(show);
   setTimeout(()=>{stop=true;const tp=gmTopic(pick);pop.className="gmpop land";pop.innerHTML=`${tp.emo} ${esc(tp.label)}!`;
     const sl=box.querySelector(`[data-slice="${pick}"]`);if(sl)sl.classList.add("gmwin");
     try{playMidis([72,76,79,84],0.09,"ding")}catch(e){}
@@ -2687,7 +2730,7 @@ function gmRenderDailyDone(box){
   box.innerHTML=gmDailyFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">${tp.emo}</span><div><span class="big">${d.s}/5</span><br><b>${esc(tp.label)}</b> &middot; ${GM_CLOCK} ${gmFmtT(d.ms)}<br>${msg}</div></div>
     <div class="gmmarksbig">${gmMarks(d.m,5)}</div>
     <div class="props" style="grid-template-columns:auto 1fr"><dt>Streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}${str>=GM.st.bestStreak&&str>1?" (your best!)":""}</dd>${GM.dailyBonus?`<dt>XP earned</dt><dd>+${GM.dailyBonus+d.s*20} XP</dd>`:""}<dt>Next challenge</dt><dd>in ${hh}h ${mm}m</dd></div>
-    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button><button class="btn" type="button" data-gm="lb">Leaderboard</button>${gmLes()&&!GM.st.lessons[gmToday()]?`<button class="btn" type="button" data-gm="lesson">Today's lesson</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
+    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button><button class="btn" type="button" data-gm="lb">Leaderboard</button>${!(GM.st.trivia&&GM.st.trivia[gmToday()])?`<button class="btn" type="button" data-gm="trivia">Daily trivia</button>`:""}${gmLes()&&!GM.st.lessons[gmToday()]?`<button class="btn" type="button" data-gm="lesson">Today's lesson</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
   box.querySelector(".btn.default").focus({preventScroll:true});
 }
 
@@ -2711,7 +2754,7 @@ const gmLesOpen=()=>{const d=document.getElementById("gmlesson");return !!(d&&d.
 const GRAD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5L15 6 8 9.5 1 6z" fill="#000080" stroke="#000" stroke-linejoin="round"/><path d="M4 7.6v3.2c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V7.6L8 9.5z" fill="#3a6ea5" stroke="#000" stroke-linejoin="round"/><path d="M13.6 6.7v4.6" stroke="#c00000" stroke-width="1.2"/><circle cx="13.6" cy="11.8" r="1" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg>';
 function gmLesFrame(body,title){return `<div class="scrim gmscrim"><div class="dlg wide gmd" role="dialog" aria-modal="true" aria-labelledby="gmlt1"><div class="titlebar">${GRAD16}<span class="t" id="gmlt1">${esc(title||"Daily Lesson")}</span><div class="tbtns"><button class="tbtn" type="button" data-glclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}</div></div></div>`}
 function gmOpenLesson(setup){setMenu(false);if(gmDailyOpen())gmCloseDaily(true);GM.lsetup=!!setup||!gmLes();if(GM.lrun&&GM.lrun.date!==gmToday()&&!GM.lrun.practice){GM.lrun=null;store.set("gm.lrun",null)}gmRenderLesson()}
-function gmCloseLesson(){if(GM.lrun)store.set("gm.lrun",GM.lrun);gmLesBox().innerHTML="";buildStart();if(gmScoresOpen())gmRenderScores()}
+function gmCloseLesson(noChain){if(GM.lrun)store.set("gm.lrun",GM.lrun);gmLesBox().innerHTML="";buildStart();if(gmScoresOpen())gmRenderScores();if(!noChain)gmChain(!!GM.st.lessons[gmToday()])}
 function gmRenderLesson(){
   const box=gmLesBox(),L=gmLes();
   if(GM.lsetup||!L){gmLesSetup(box);return}
@@ -2797,16 +2840,17 @@ document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.l
 // ---------- shared leaderboard (db) ----------
 let gmDB=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
 function gmPayload(){const st=GM.st,ds=Object.keys(st.dailies).sort(),last=ds[ds.length-1];const L=gmLevel(st.xp);
-  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,
+  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,
     daily:last?{d:last,t:st.dailies[last].t,s:st.dailies[last].s,ms:st.dailies[last].ms,m:st.dailies[last].m}:null}}
 function gmSyncSoon(now){clearTimeout(gmSyncT);gmSyncT=setTimeout(gmSync,now?50:2500)}
 async function gmSync(){if(!gmDB||!gmUid||!gmCanWrite)return;const p=gmPayload(),k=JSON.stringify(p);if(k===gmLastSync)return;
   try{await gmDB.save(Object.assign({},p,{upd:Date.now()}));gmLastSync=k;store.set("gm.sync",k)}
   catch(e){if(e&&e.code==="invalid_argument"){gmCanWrite=false;if(gmScoresOpen())gmRenderScores()}else if(e&&e.code==="unavailable"){setTimeout(gmSync,4000+Math.random()*3000)}}}
 // On your own website: a Supabase table (see SUPABASE_SETUP). Players sign in anonymously, so each browser is one player.
-const GM_SB=(()=>{const c=window.ATLAS95_SUPABASE;if(!c)return null;const ok=v=>v&&!/PASTE/i.test(v)?String(v).trim():"";return {url:ok(c.url),anonKey:ok(c.anonKey)}})();
+const GM_SB=(()=>{const c=window.ATLAS95_SUPABASE;if(!c)return null;const ok=v=>v&&!/PASTE|YOUR-PROJECT/i.test(v)?String(v).trim():"";return {url:ok(c.url),anonKey:ok(c.anonKey)}})();
 async function gmConnectSupabase(){
-  try{if(!window.supabase||!GM_SB.url||!GM_SB.anonKey){gmDbState="off";return}
+  try{if(!GM_SB.url||!GM_SB.anonKey){gmDbState="off";return}
+    if(!window.supabase){gmDbState="off";GM.sbErr="The Supabase library didn't load.";return}
     const sb=window.supabase.createClient(GM_SB.url,GM_SB.anonKey);
     let {data:{session}}=await sb.auth.getSession();
     if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
@@ -2816,7 +2860,7 @@ async function gmConnectSupabase(){
     gmDB={remove:async()=>{const {error}=await sb.from("players").delete().eq("id",gmUid);if(error)throw error;await load()},save:async p=>{const {error}=await sb.from("players").upsert({id:gmUid,data:p,updated_at:new Date().toISOString()});if(error){const e=new Error(error.message);e.code=error.code==="42501"?"invalid_argument":"unavailable";throw e}load()},refresh:load};
     await load();gmSync();setInterval(()=>{if(gmScoresOpen()&&document.visibilityState!=="hidden")load()},60000);
     if(gmScoresOpen())gmRenderScores();
-  }catch(e){gmDbState="off";if(gmScoresOpen())gmRenderScores()}
+  }catch(e){gmDbState="off";GM.sbErr=String(e&&e.message||e).slice(0,160);if(gmScoresOpen())gmRenderScores()}
 }
 async function gmConnect(){
   if(GM_SB){gmConnectSupabase();return}
@@ -2870,18 +2914,20 @@ function gmMeHTML(){
     <div class="group"><span class="legend">Best times</span>${times?`<table class="gmtable"><thead><tr><th>Program</th><th>Section</th><th>Time</th></tr></thead><tbody>${times}</tbody></table>`:`<div class="note">Finish a section from the start to record a time. Turn on <a href="#" class="link" data-gmsettimer>Timer mode</a> to see the clock while you play.</div>`}</div>`;
 }
 function gmLbHTML(){
-  if(gmDbState!=="on")return `<div class="group"><span class="legend">Leaderboard</span><div>${gmDbState==="connecting"?"Connecting to the leaderboard...":(GM_SB?(GM_SB.url?"Couldn't reach the leaderboard right now.":"The leaderboard isn't set up on this site yet.")+" Your own stats still work here.":"The shared leaderboard works on the published page when you're signed in to Claude. Your own stats still work here.")}</div><div class="note">Anyone can still compare scores with the Share buttons.</div></div>`;
+  if(gmDbState!=="on")return `<div class="group"><span class="legend">Leaderboard</span><div>${gmDbState==="connecting"?"Connecting to the leaderboard...":(GM_SB?(GM_SB.url?"Couldn't reach the leaderboard right now.":"The leaderboard isn't set up on this site yet.")+" Your own stats still work here.":"The shared leaderboard works on the published page when you're signed in to Claude. Your own stats still work here.")}</div>${GM_SB&&GM.sbErr?`<div class="note">Details: ${esc(GM.sbErr)}${/anonymous/i.test(GM.sbErr)?" (Turn on anonymous sign-ins in Supabase.)":""}</div>`:""}<div class="note">Anyone can still compare scores with the Share buttons.</div></div>`;
   const t=gmToday(),y=gmDayNum(t);let list=(gmPlayers||[]).slice();
-  const subs=[["today","Today's challenge"],["xp","All-time XP"],["streak","Streaks"]];
+  const subs=[["today","Today's challenge"],["trivia","Daily trivia"],["xp","All-time XP"],["streak","Streaks"]];
   const st=p=>p.streakDay&&y-gmDayNum(p.streakDay)<=1?p.streak||0:0;
   let head,rows;
   if(GM.lb==="today"){list=list.filter(p=>p.daily&&p.daily.d===t).sort((a,b)=>b.daily.s-a.daily.s||a.daily.ms-b.daily.ms);head="<th>#</th><th>Player</th><th>Topic</th><th>Result</th><th>Time</th>";
     rows=list.map((p,i)=>`<tr class="${p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>${p.id===gmUid?" (you)":""}</td><td>${gmTopic(p.daily.t).emo} ${esc(gmTopic(p.daily.t).label)}</td><td>${gmMarks(p.daily.m||"",5)} ${p.daily.s}/5</td><td>${gmFmtT(p.daily.ms)}</td></tr>`).join("")}
+  else if(GM.lb==="trivia"){list=list.filter(p=>p.tdaily&&p.tdaily.d===t).sort((a,b)=>b.tdaily.s-a.tdaily.s);head="<th>#</th><th>Player</th><th>Points</th><th>Right</th><th>Best board</th>";
+    rows=list.map((p,i)=>`<tr class="${p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>${p.id===gmUid?" (you)":""}</td><td>${p.tdaily.s}</td><td>${[...(p.tdaily.m||"")].filter(x=>x==="1").length}/9</td><td>${p.tbest?p.tbest.toLocaleString("en-US"):"--"}</td></tr>`).join("")}
   else if(GM.lb==="xp"){list.sort((a,b)=>(b.xp||0)-(a.xp||0));head="<th>#</th><th>Player</th><th>Level</th><th>XP</th><th>Badges</th>";
     rows=list.map((p,i)=>`<tr class="${p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>${p.id===gmUid?" (you)":""}</td><td>${p.lvl||1} ${esc(gmTitle(p.lvl||1))}</td><td>${(p.xp||0).toLocaleString("en-US")}</td><td>${p.badges||0}</td></tr>`).join("")}
   else{list.sort((a,b)=>st(b)-st(a)||(b.bestStreak||0)-(a.bestStreak||0));head="<th>#</th><th>Player</th><th>Streak</th><th>Best</th><th>First try</th>";
     rows=list.map((p,i)=>`<tr class="${p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>${p.id===gmUid?" (you)":""}</td><td>${GM_FIRE} ${st(p)}</td><td>${p.bestStreak||0}</td><td>${p.answers?Math.round((p.first||0)/p.answers*100)+"%":"--"}</td></tr>`).join("")}
-  const empty=GM.lb==="today"?"Nobody has played today's challenge yet. Be the first!":"No players yet.";
+  const empty=GM.lb==="today"?"Nobody has played today's challenge yet. Be the first!":GM.lb==="trivia"?"Nobody has finished today's trivia yet. Be the first!":"No players yet.";
   return `<div class="menubar">${subs.map(([k,l])=>`<button class="btn" type="button" data-gmlb="${k}" aria-pressed="${GM.lb===k}">${l}</button>`).join("")}</div>
     ${!gmCanWrite?`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>You're viewing the board</b>Your scores can't be posted from this link. Ask the owner to share the desktop with you with edit access to join in.</div></div>`:""}
     ${GM_SB&&!GM.set.nick?`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>Pick a leaderboard name</b>Right now you show up as "Player." <a href="#" class="link" data-gmtab="settings">Set your name</a>.</div></div>`:""}
@@ -2896,7 +2942,7 @@ function gmBadgesHTML(){return `<div class="gmbadges">${GM_BADGES.map(b=>{const 
 function gmSettingsHTML(){
   const en=gmEnabled();
   return `<div class="group"><span class="legend">Timer</span><label class="cb"><input type="checkbox" data-gmset="timer"${GM.set.timer?" checked":""}> Timer mode: show a stopwatch while you quiz a section</label><div class="note">The clock appears in each program's status bar and pauses when you leave the window or stop for 2 minutes. Your best time for each section is saved.</div></div>
-    <div class="group"><span class="legend">Daily challenge</span><label class="cb"><input type="checkbox" data-gmset="popup"${GM.set.popup?" checked":""}> Pop up the daily challenge when I haven't played today</label>
+    <div class="group"><span class="legend">Daily challenge</span><label class="cb"><input type="checkbox" data-gmset="popup"${GM.set.popup?" checked":""}> Pop up the daily challenge when I haven't played today</label><label class="cb"><input type="checkbox" data-gmset="tpopup"${GM.set.tpopup!==false?" checked":""}> Pop up the daily trivia (9 tiles) too</label>
       <div style="margin-top:4px">Topics that can come up on the wheel:</div><div class="gmtopics">${GM_TOPICS.map(t=>`<label class="cb"><input type="checkbox" data-gmtopic="${t.k}"${en.includes(t.k)?" checked":""}> ${t.emo} ${esc(t.label)}</label>`).join("")}</div>
       <div class="actions"><button class="btn" type="button" data-gmtopics="all">Select all</button><span class="note" id="gmtnote"></span></div></div>
     <div class="group"><span class="legend">Daily lesson</span><div>${gmLes()?`Subject: <b>${esc(gmLesName(gmLes().topic,gmLes().lang))}</b> &middot; ${GM_LEN[gmLes().len]} questions a day`:"Not set up yet."}</div><div class="actions"><button class="btn" type="button" data-gmlesset>${gmLes()?"Change...":"Set up..."}</button></div></div>
@@ -2906,14 +2952,17 @@ function gmSettingsHTML(){
     <div class="group"><span class="legend">Reset</span><div class="actions"><button class="btn" type="button" id="gmreset">${GM.resetArm?"Click again to erase XP, badges and streaks":"Reset game stats..."}</button></div><div class="note">This doesn't touch your progress or best scores in the programs.</div></div>`;
 }
 function gmMenu(k){
-  if(k==="daily"){if(gmLesOpen())gmCloseLesson();gmOpenDaily();return}
-  if(k==="lesson"){if(gmDailyOpen())gmCloseDaily(true);gmOpenLesson();return}
-  if(gmLesOpen())gmCloseLesson();
+  GM.popq=[];
+  if(k==="daily"){if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);gmOpenDaily();return}
+  if(k==="lesson"){if(gmDailyOpen())gmCloseDaily(true);if(gmTrivOpen())gmCloseTrivia(true);gmOpenLesson();return}
+  if(k==="trivia"){if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);gmOpenTrivia();return}
+  if(k==="lbtriv"){GM.lb="trivia";k="lb"}
+  if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);
   if(gmDailyOpen())gmCloseDaily();
   const tab=k==="settings"?"settings":k==="lb"?"lb":k==="badges"?"badges":"me";GM.tab=tab;showApp("scores");
 }
 function gmStartItems(){const done=!!GM.st.dailies[gmToday()],L=gmLes(),ld=GM.st.lessons&&GM.st.lessons[gmToday()];
-  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson <span class="sub">${!L?"(set up)":ld?"(done today)":"("+esc(gmLesName(L.topic,L.lang))+")"}</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
+  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="trivia">${TV16}Daily Trivia <span class="sub">${GM.st.trivia&&GM.st.trivia[gmToday()]?"(done today)":"(9 tiles)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson <span class="sub">${!L?"(set up)":ld?"(done today)":"("+esc(gmLesName(L.topic,L.lang))+")"}</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
 function gmStartScores(){return [["me","My stats"],["lb","Leaderboard"],["badges","Badges"]].map(([k,l])=>`<li><button type="button" data-gm="${k}">${l}</button></li>`).join("")}
 
 // ---------- events ----------
@@ -2943,6 +2992,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{const i=e.target;if(!i.matches||!i.matches("[data-gmset],[data-gmtopic]"))return;
   if(i.dataset.gmset==="timer"){gmSetTimer(i.checked);buildStart();return}
   if(i.dataset.gmset==="popup"){GM.set.popup=i.checked;gmSave();return}
+  if(i.dataset.gmset==="tpopup"){GM.set.tpopup=i.checked;gmSave();return}
   if(i.dataset.gmtopic){const sel=[...document.querySelectorAll("[data-gmtopic]")].filter(x=>x.checked).map(x=>x.dataset.gmtopic);
     if(!sel.length){i.checked=true;const n=document.getElementById("gmtnote");if(n)n.textContent="Keep at least one topic.";return}
     GM.set.topics=sel.length===GM_TOPICS.length?null:sel;gmSave();const n=document.getElementById("gmtnote");if(n)n.textContent="Saved. Changes apply to the next spin."}});
@@ -2958,16 +3008,120 @@ function gmSeedFromBests(){
 function gmInit(){
   if(gmSeeded){gmSeedFromBests();gmCheckBadges(true);gmSave()}
   gmTimerCells();buildStart();gmConnect();
-  const L=gmLes(),lesDue=L&&L.popup!==false&&!GM.st.lessons[gmToday()];
-  if(GM.set.popup&&!GM.st.dailies[gmToday()]){GM.chainLesson=!!lesDue;setTimeout(()=>{if(!gmDailyOpen())gmOpenDaily()},700)}
-  else if(lesDue)setTimeout(()=>{if(!gmDailyOpen()&&!gmLesOpen())gmOpenLesson()},700);
+  const L=gmLes(),t=gmToday();GM.popq=[];
+  if(GM.set.popup&&!GM.st.dailies[t])GM.popq.push("daily");
+  if(GM.set.tpopup!==false&&!(GM.st.trivia&&GM.st.trivia[t]))GM.popq.push("trivia");
+  if(L&&L.popup!==false&&!GM.st.lessons[t])GM.popq.push("lesson");
+  if(GM.popq.length)setTimeout(()=>{if(!gmDailyOpen()&&!gmLesOpen()&&!gmTrivOpen())gmNextPopup()},700);
 }
+
+// ================= Trivia Board (full board) + Daily Trivia (9 tiles) =================
+const TRIVIA={"Science":[[["What gas do plants take in from the air to make food?","Carbon dioxide","Oxygen","Nitrogen","Helium"],["What is H2O more commonly called?","Water","Salt","Hydrogen peroxide","Ammonia"],["What force keeps us on the ground?","Gravity","Magnetism","Friction","Inertia"]],[["What is the hardest natural substance?","Diamond","Quartz","Granite","Steel"],["At what temperature in Celsius does water boil at sea level?","100°","90°","212°","120°"],["What part of a cell holds its DNA?","Nucleus","Membrane","Ribosome","Cytoplasm"]],[["What is the chemical symbol for gold?","Au","Ag","Gd","Go"],["Which planet has the most known moons?","Saturn","Jupiter","Neptune","Mars"],["What type of energy is stored in a stretched rubber band?","Elastic potential energy","Kinetic energy","Thermal energy","Nuclear energy"]],[["What is the most abundant gas in Earth's atmosphere?","Nitrogen","Oxygen","Carbon dioxide","Argon"],["What scale measures how acidic or basic something is?","pH scale","Richter scale","Mohs scale","Kelvin scale"],["What particle has a negative electric charge?","Electron","Proton","Neutron","Photon"]],[["Who proposed the three laws of motion?","Isaac Newton","Albert Einstein","Galileo Galilei","Niels Bohr"],["What is the only metal that's liquid at room temperature?","Mercury","Gallium","Lead","Tin"],["Roughly how fast does light travel?","300,000 km per second","3,000 km per second","30,000 km per hour","300 km per second"]]],"World History":[[["Which ancient people built the pyramids of Giza?","Egyptians","Romans","Greeks","Mayans"],["In what country did the Olympic Games begin?","Greece","Italy","Egypt","France"],["Which ship famously sank in 1912 after hitting an iceberg?","Titanic","Lusitania","Mayflower","Bismarck"]],[["In what year did World War II end?","1945","1939","1918","1950"],["Who was the first person to walk on the Moon?","Neil Armstrong","Buzz Aldrin","Yuri Gagarin","John Glenn"],["What wall came down in 1989?","Berlin Wall","Great Wall","Hadrian's Wall","Western Wall"]],[["Who was the first emperor of Rome?","Augustus","Julius Caesar","Nero","Constantine"],["Which empire was ruled by Genghis Khan?","Mongol Empire","Ottoman Empire","Persian Empire","Roman Empire"],["In what city was the Magna Carta sealed?","Runnymede","London","Paris","Edinburgh"]],[["What year did Christopher Columbus first reach the Americas?","1492","1512","1453","1607"],["Which French queen was executed during the French Revolution?","Marie Antoinette","Catherine de' Medici","Joan of Arc","Eleanor of Aquitaine"],["The Renaissance began in which country?","Italy","France","England","Spain"]],[["What was the capital of the Byzantine Empire?","Constantinople","Rome","Athens","Alexandria"],["Who was the first woman to win a Nobel Prize?","Marie Curie","Florence Nightingale","Ada Lovelace","Rosalind Franklin"],["The Hundred Years' War was fought mainly between England and which country?","France","Spain","Scotland","Netherlands"]]],"Geography":[[["What is the largest ocean on Earth?","Pacific","Atlantic","Indian","Arctic"],["What is the largest continent?","Asia","Africa","North America","Europe"],["Which country is shaped like a boot?","Italy","Greece","Portugal","Chile"]],[["What is the longest river in South America?","Amazon","Paraná","Orinoco","Magdalena"],["What desert covers much of northern Africa?","Sahara","Gobi","Kalahari","Atacama"],["Mount Everest sits on the border of Nepal and what other country's territory?","China","India","Bhutan","Pakistan"]],[["What is the smallest country in the world?","Vatican City","Monaco","San Marino","Liechtenstein"],["Which country has the most people?","India","China","United States","Indonesia"],["Which US state has the most coastline?","Alaska","Florida","California","Hawaii"]],[["What is the deepest lake in the world?","Lake Baikal","Lake Superior","Lake Tanganyika","Caspian Sea"],["Which African country has the most people?","Nigeria","Egypt","Ethiopia","South Africa"],["What strait separates Europe and Africa?","Strait of Gibraltar","Bosphorus","Strait of Hormuz","Bering Strait"]],[["What is the driest non-polar desert on Earth?","Atacama","Sahara","Gobi","Mojave"],["Which country has the most time zones, counting overseas territories?","France","Russia","United States","China"],["Lake Titicaca sits on the border of Peru and which country?","Bolivia","Chile","Ecuador","Brazil"]]],"Animals":[[["What is the largest animal that has ever lived?","Blue whale","African elephant","Megalodon","T. rex"],["What do caterpillars turn into?","Butterflies or moths","Beetles","Dragonflies","Bees"],["Which animal is known as the 'King of the Jungle'?","Lion","Tiger","Gorilla","Elephant"]],[["How many legs does a spider have?","Eight","Six","Ten","Twelve"],["What is a baby kangaroo called?","Joey","Cub","Kit","Calf"],["What is the fastest land animal?","Cheetah","Pronghorn","Lion","Greyhound"]],[["Which bird is often seen as a symbol of peace?","Dove","Eagle","Swan","Robin"],["What kind of animal is a Komodo dragon?","Lizard","Snake","Crocodile","Dinosaur"],["A group of crows is called a what?","Murder","Flock","Pride","Gaggle"]],[["How many hearts does an octopus have?","Three","One","Two","Eight"],["What is the only mammal that can truly fly?","Bat","Flying squirrel","Sugar glider","Colugo"],["Which animal's fingerprints are almost identical to humans'?","Koala","Chimpanzee","Gorilla","Raccoon"]],[["What is a group of flamingos called?","Flamboyance","Parliament","Crash","Murder"],["What is a baby swan called?","Cygnet","Gosling","Duckling","Fledgling"],["What color is a polar bear's skin?","Black","White","Pink","Gray"]]],"Space":[[["What planet do we live on?","Earth","Mars","Venus","Jupiter"],["What is the closest star to Earth?","The Sun","Proxima Centauri","Sirius","Polaris"],["Which planet is known as the Red Planet?","Mars","Venus","Jupiter","Mercury"]],[["What is the largest planet in our solar system?","Jupiter","Saturn","Neptune","Earth"],["Which planet is famous for its bright rings?","Saturn","Mars","Mercury","Venus"],["What is the name of our galaxy?","Milky Way","Andromeda","Whirlpool","Sombrero"]],[["What is the hottest planet in our solar system?","Venus","Mercury","Mars","Jupiter"],["What do we call a scientist who studies stars and planets?","Astronomer","Astrologer","Geologist","Meteorologist"],["How long does it take Earth to orbit the Sun?","About 365 days","About 30 days","About 24 hours","About 100 days"]],[["What was the first artificial satellite launched into space?","Sputnik 1","Explorer 1","Apollo 11","Vostok 1"],["Which planet spins on its side?","Uranus","Neptune","Saturn","Venus"],["Who was the first human to travel into space?","Yuri Gagarin","Neil Armstrong","Alan Shepard","John Glenn"]],[["What is the name of the largest volcano in the solar system?","Olympus Mons","Mauna Kea","Mount Everest","Valles Marineris"],["Which dwarf planet was reclassified from a planet in 2006?","Pluto","Ceres","Eris","Haumea"],["About how long does sunlight take to reach Earth?","About 8 minutes","About 8 seconds","About 1 hour","About 1 day"]]],"Food & Drink":[[["What fruit is traditionally used to make guacamole?","Avocado","Lime","Tomato","Mango"],["What is the main ingredient in hummus?","Chickpeas","Lentils","Black beans","Peanuts"],["Which country is the home of sushi?","Japan","China","Korea","Thailand"]],[["What kind of pastry is a croissant?","A flaky, buttery roll","A fried dough ball","A cream-filled cake","A savory pie"],["Which spice gives curry its yellow color?","Turmeric","Saffron","Paprika","Cumin"],["What nut is used to make marzipan?","Almond","Walnut","Cashew","Pistachio"]],[["What country did the dish paella come from?","Spain","Italy","Mexico","Portugal"],["What type of food is brie?","Cheese","Bread","Sausage","Wine"],["What is miso mainly made from?","Fermented soybeans","Rice flour","Seaweed","Fish eggs"]],[["Which country produces the most coffee?","Brazil","Colombia","Vietnam","Ethiopia"],["What is the world's most expensive spice by weight?","Saffron","Vanilla","Cardamom","Black pepper"],["Tzatziki sauce is made mainly from yogurt and what vegetable?","Cucumber","Zucchini","Onion","Spinach"]],[["What grain is used to make traditional Japanese sake?","Rice","Barley","Wheat","Millet"],["Which Italian city is pesto originally from?","Genoa","Naples","Rome","Milan"],["What is the name of the Thai dish of stir-fried rice noodles with tamarind and peanuts?","Pad thai","Tom yum","Larb","Massaman"]]],"Movies & TV":[[["What kind of animal is Simba in 'The Lion King'?","Lion","Tiger","Cheetah","Leopard"],["In 'Toy Story,' what is the name of the cowboy?","Woody","Buzz","Jessie","Rex"],["Which wizard school does Harry Potter attend?","Hogwarts","Durmstrang","Beauxbatons","Ilvermorny"]],[["What color is the 'yellow brick road' leading to in 'The Wizard of Oz'?","The Emerald City","The Ruby Palace","The Golden Gate","The Crystal Tower"],["In 'Finding Nemo,' what kind of fish is Nemo?","Clownfish","Goldfish","Angelfish","Pufferfish"],["What is the name of the toy dinosaur in 'Toy Story'?","Rex","Spike","Dino","Rocky"]],[["Who directed 'Jaws' and 'E.T.'?","Steven Spielberg","George Lucas","James Cameron","Martin Scorsese"],["What sitcom is set mostly in a coffee shop called Central Perk?","Friends","Seinfeld","How I Met Your Mother","Frasier"],["In 'Star Wars,' what is the name of Han Solo's ship?","Millennium Falcon","Death Star","X-wing","Slave I"]],[["What was the first feature-length animated film by Disney?","Snow White and the Seven Dwarfs","Cinderella","Pinocchio","Fantasia"],["Which film won the first Academy Award for Best Picture?","Wings","Casablanca","Gone with the Wind","Citizen Kane"],["What TV series follows the Dunder Mifflin paper company?","The Office","Parks and Recreation","Superstore","30 Rock"]],[["Who played Jack in 'Titanic' (1997)?","Leonardo DiCaprio","Brad Pitt","Matt Damon","Johnny Depp"],["Which film features the line 'Here's looking at you, kid'?","Casablanca","Gone with the Wind","The Maltese Falcon","Citizen Kane"],["What is the name of the fictional African country in 'Black Panther'?","Wakanda","Zamunda","Genovia","Sokovia"]]],"Music":[[["How many strings does a standard guitar have?","Six","Four","Five","Eight"],["Which instrument has 88 keys?","Piano","Organ","Accordion","Harpsichord"],["What do you call a group of four singers?","Quartet","Trio","Quintet","Duet"]],[["Which band sang 'Hey Jude'?","The Beatles","The Rolling Stones","Queen","The Beach Boys"],["Who is known as the 'King of Pop'?","Michael Jackson","Elvis Presley","Prince","Justin Timberlake"],["What city is considered the birthplace of jazz?","New Orleans","Chicago","New York","Memphis"]],[["Which composer wrote the 'Moonlight Sonata'?","Beethoven","Mozart","Bach","Chopin"],["Who is known as the 'King of Rock and Roll'?","Elvis Presley","Chuck Berry","Little Richard","Buddy Holly"],["How many lines are on a standard music staff?","Five","Four","Six","Seven"]],[["Which band's lead singer was Freddie Mercury?","Queen","Led Zeppelin","Aerosmith","The Who"],["What does 'forte' mean in music?","Loud","Soft","Fast","Slow"],["Which country did the tango come from?","Argentina","Spain","Brazil","Cuba"]],[["Which composer kept writing music after going almost completely deaf?","Beethoven","Mozart","Handel","Vivaldi"],["Vivaldi's most famous set of violin concertos is called what?","The Four Seasons","The Nutcracker","The Planets","Swan Lake"],["What instrument did jazz legend Louis Armstrong famously play?","Trumpet","Saxophone","Clarinet","Trombone"]]],"Sports":[[["How many players are on the field for one soccer team?","11","9","10","12"],["In what sport do you hit a shuttlecock?","Badminton","Tennis","Squash","Volleyball"],["How often are the Summer Olympics usually held?","Every 4 years","Every 2 years","Every year","Every 5 years"]],[["How many points is a touchdown worth in American football?","6","7","3","5"],["In bowling, what is it called when you knock down all 10 pins on your first roll?","Strike","Spare","Split","Turkey"],["How many holes are played in a standard round of golf?","18","9","12","21"]],[["Which country has won the most men's FIFA World Cups?","Brazil","Germany","Italy","Argentina"],["In tennis, what is a score of zero called?","Love","Nil","Duck","Zip"],["How many rings are on the Olympic flag?","Five","Four","Six","Seven"]],[["How long is a marathon?","26.2 miles","24 miles","20 miles","30 miles"],["Which tennis tournament is played on grass in London?","Wimbledon","US Open","French Open","Australian Open"],["In baseball, how many strikes make an out?","Three","Four","Two","Five"]],[["What sport's championship trophy is the Stanley Cup?","Hockey","Basketball","Baseball","Football"],["In which city were the first modern Olympic Games held in 1896?","Athens","Paris","London","Rome"],["How many players are on the court for one basketball team?","Five","Six","Seven","Four"]]],"Books":[[["Who wrote 'Romeo and Juliet'?","William Shakespeare","Charles Dickens","Jane Austen","Mark Twain"],["What is the name of the boy wizard in J.K. Rowling's books?","Harry Potter","Percy Jackson","Frodo Baggins","Artemis Fowl"],["In 'Charlotte's Web,' what kind of animal is Charlotte?","Spider","Pig","Goose","Rat"]],[["Who wrote 'Pride and Prejudice'?","Jane Austen","Charlotte Brontë","Emily Brontë","Mary Shelley"],["What is the name of the hobbit who carries the One Ring?","Frodo","Bilbo","Sam","Pippin"],["Who wrote 'The Adventures of Tom Sawyer'?","Mark Twain","Jack London","Herman Melville","John Steinbeck"]],[["Who wrote '1984'?","George Orwell","Aldous Huxley","Ray Bradbury","H.G. Wells"],["What whale does Captain Ahab hunt?","Moby Dick","Willy","Shamu","Leviathan"],["Who wrote 'The Great Gatsby'?","F. Scott Fitzgerald","Ernest Hemingway","William Faulkner","John Steinbeck"]],[["Who created the detective Sherlock Holmes?","Arthur Conan Doyle","Agatha Christie","Edgar Allan Poe","Raymond Chandler"],["Which novel begins 'Call me Ishmael'?","Moby-Dick","Treasure Island","Robinson Crusoe","The Old Man and the Sea"],["Who wrote 'Frankenstein'?","Mary Shelley","Bram Stoker","Edgar Allan Poe","Robert Louis Stevenson"]],[["In what language did Gabriel García Márquez write 'One Hundred Years of Solitude'?","Spanish","Portuguese","Italian","French"],["Which Russian author wrote 'War and Peace'?","Leo Tolstoy","Fyodor Dostoevsky","Anton Chekhov","Ivan Turgenev"],["Who wrote 'The Odyssey'?","Homer","Virgil","Sophocles","Ovid"]]],"Words":[[["What is the opposite of 'ancient'?","Modern","Old","Antique","Historic"],["What do you call a word that means the same as another word?","Synonym","Antonym","Homonym","Acronym"],["How many letters are in the English alphabet?","26","24","28","25"]],[["What does the prefix 'tri-' mean?","Three","Two","Four","Many"],["What is a word that reads the same forward and backward, like 'level'?","Palindrome","Anagram","Acronym","Homophone"],["Which word means 'a fear of spiders'?","Arachnophobia","Claustrophobia","Acrophobia","Agoraphobia"]],[["What does 'NASA' stand for?","National Aeronautics and Space Administration","North American Space Agency","National Air and Space Association","Naval Aerospace Systems Administration"],["Which of these is a correct plural of 'cactus'?","Cacti","Cactae","Cactis","Cactoes"],["What does 'bonjour' mean in English?","Hello","Goodbye","Thank you","Please"]],[["Which of these words can you type using only the top row of letters on a keyboard?","Typewriter","Keyboard","Computer","Question"],["What language does the word 'kindergarten' come from?","German","Dutch","French","Danish"],["What is a 'portmanteau' word, like 'brunch'?","Two words blended into one","A word borrowed from French","A word that sounds like its meaning","A very long word"]],[["Which word describes something that imitates the sound it makes, like 'buzz'?","Onomatopoeia","Alliteration","Hyperbole","Metaphor"],["What does the Latin phrase 'carpe diem' mean?","Seize the day","Live and learn","Know yourself","Time flies"],["What is the most commonly used letter in English?","E","A","T","S"]]],"Inventions":[[["Who is credited with inventing the telephone?","Alexander Graham Bell","Thomas Edison","Nikola Tesla","Samuel Morse"],["What did the Wright brothers invent?","The first powered airplane","The car","The bicycle","The hot air balloon"],["What device shows you which way is north?","Compass","Barometer","Thermometer","Telescope"]],[["Who developed a practical, long-lasting light bulb in 1879?","Thomas Edison","Benjamin Franklin","Henry Ford","James Watt"],["Which ancient civilization invented paper?","China","Egypt","Greece","Rome"],["What did Johannes Gutenberg invent around 1440?","A printing press with movable type","The telescope","The clock","Eyeglasses"]],[["Who invented the World Wide Web?","Tim Berners-Lee","Bill Gates","Steve Jobs","Mark Zuckerberg"],["Which scientist discovered penicillin?","Alexander Fleming","Louis Pasteur","Marie Curie","Joseph Lister"],["What does 'GPS' stand for?","Global Positioning System","Geographic Pointing Service","General Position Signal","Global Path Software"]],[["Henry Ford is famous for popularizing what manufacturing method?","The assembly line","The steam engine","Interchangeable screws","The conveyor oven"],["Who invented the first successful polio vaccine, released in 1955?","Jonas Salk","Edward Jenner","Louis Pasteur","Albert Sabin"],["Which inventor is known for alternating current (AC) electricity?","Nikola Tesla","Thomas Edison","Michael Faraday","James Watt"]],[["What was the name of the first programmable electronic general-purpose computer, finished in 1945?","ENIAC","UNIVAC","Apple I","Colossus"],["Who is often called the first computer programmer?","Ada Lovelace","Grace Hopper","Alan Turing","Charles Babbage"],["What did Willis Carrier invent in 1902?","Modern air conditioning","The refrigerator","The microwave oven","The radiator"]]]};
+const TCATS=Object.keys(TRIVIA),TVALS=[100,200,300,400,500];
+function tvBuild(seed,ncat,ntier,bonus){
+  const rnd=gmRng(seed),cats=gmShuf(TCATS,rnd).slice(0,ncat),cells=[];
+  cats.forEach((c,ci)=>{for(let t=0;t<ntier;t++){const q=gmPickOne(TRIVIA[c][t],rnd);cells.push({c,ci,t,v:TVALS[t],q:q[0],a:q[1],opts:gmShuf(q.slice(1),rnd)})}});
+  let bi=-1;if(bonus){const pool=cells.map((x,i)=>i).filter(i=>cells[i].t>=2);bi=pool[Math.floor(rnd()*pool.length)]}
+  return {cats,cells,bonus:bi};
+}
+const tvMax=b=>b.cells.reduce((a,c,i)=>a+c.v*(i===b.bonus?2:1),0);
+const tvScore=(b,ans)=>Object.entries(ans).reduce((a,[i,r])=>a+(r.ok?b.cells[i].v*(+i===b.bonus?2:1):0),0);
+function tvBoardHTML(b,ans,pre){
+  const ncat=b.cats.length,ntier=b.cells.length/ncat;
+  let o=`<div class="tvboard" style="grid-template-columns:repeat(${ncat},minmax(0,1fr))">`+b.cats.map(c=>`<div class="tvcat">${esc(c)}</div>`).join("");
+  for(let t=0;t<ntier;t++)b.cats.forEach((c,ci)=>{const i=b.cells.findIndex(x=>x.ci===ci&&x.t===t),r=ans[i];
+    o+=r?`<div class="tvtile used ${r.ok?"ok":"no"}" aria-label="${r.ok?"Right":"Wrong"}">${r.ok?"✓":"✗"}</div>`:`<button type="button" class="tvtile" data-${pre}="${i}">${b.cells[i].v}</button>`});
+  return o+`</div>`;
+}
+function tvQuestionHTML(b,i,ans,pre){
+  const c=b.cells[i],r=ans[i],isB=i===b.bonus,val=c.v*(isB?2:1);
+  const opts=c.opts.map((o,j)=>{let cls="btn choice";if(r){if(o===c.a)cls+=" good gmok";else if(r.pick===j)cls+=" bad gmno"}return `<button type="button" class="${cls}" data-${pre}a="${j}"${r?" disabled":""}>${r&&o===c.a?"✓ ":r&&r.pick===j?"✗ ":""}${esc(o)}</button>`}).join("");
+  return `<div class="tvq"><div class="tvqhead"><b>${esc(c.c)}</b> &middot; ${val} points${isB?' <span class="tvbonus">BONUS: double points!</span>':""}</div><div class="tvqtext">${esc(c.q)}</div></div>
+    <div class="choices">${opts}</div>${r?`<div class="fb ${r.ok?"ok":"no"}">${r.ok?`Correct! +${val}`:`The answer is ${esc(c.a)}.`}</div><div class="actions"><span class="spacer"></span><button class="btn default" type="button" data-${pre}back>Back to the board &gt;</button></div>`:`<div class="actions"><span class="spacer"></span><button class="btn" type="button" data-${pre}back>Back</button></div>`}`;
+}
+// how you compare with other players (needs the shared leaderboard)
+function tvPercent(mine,others){if(!others.length)return null;const below=others.filter(s=>s<mine).length,eq=others.filter(s=>s===mine).length;return Math.round((below+eq/2)/others.length*100)}
+
+// ---------- full board (program window) ----------
+const TV={game:store.get("tv.game")||null,best:store.get("tv.best")||0,games:store.get("tv.games")||0};
+const tvStage=document.getElementById("tvstage"),tvSlip=document.getElementById("tvslip");
+const tvSave=()=>{store.set("tv.game",TV.game);store.set("tv.best",TV.best);store.set("tv.games",TV.games)};
+function tvNew(){const seed="board|"+Date.now();TV.game={seed,ans:{},open:null};tvSave();tvRender()}
+const tvB=()=>{if(!TV.game)return null;if(!TV._b||TV._b.seed!==TV.game.seed)TV._b=Object.assign(tvBuild(TV.game.seed,6,5,true),{seed:TV.game.seed});return TV._b};
+function tvRender(){
+  if(!TV.game){tvNew();return}
+  const b=tvB(),g=TV.game,score=tvScore(b,g.ans),left=b.cells.length-Object.keys(g.ans).length;
+  document.getElementById("tvst1").textContent=`Score: ${score.toLocaleString("en-US")}`;
+  document.getElementById("tvst2").textContent=`${left} tile${left===1?"":"s"} left`;
+  document.getElementById("tvst3").textContent=`Best: ${TV.best.toLocaleString("en-US")}`;
+  if(g.open!=null){tvStage.innerHTML=tvQuestionHTML(b,g.open,g.ans,"tv");tvSlip.hidden=true;
+    const f=tvStage.querySelector(g.ans[g.open]?"[data-tvback]":".choice");if(f&&matchMedia("(pointer:fine)").matches)f.focus({preventScroll:true});return}
+  tvSlip.hidden=false;
+  if(!left){const others=(gmPlayers||[]).filter(p=>p.id!==gmUid&&p.tbest).map(p=>p.tbest),pc=tvPercent(score,others);
+    tvStage.innerHTML=tvBoardHTML(b,g.ans,"tv");
+    tvSlip.innerHTML=`<span class="legend">Game over</span><div class="score"><span class="big">${score.toLocaleString("en-US")}</span><div>points out of ${tvMax(b).toLocaleString("en-US")}<br>${pc!=null?`You scored better than <b>${pc}%</b> of players' best games.`:score>=TV.best?"<b>Your best game yet!</b>":`Your best: ${TV.best.toLocaleString("en-US")}`}</div></div>
+      <div class="actions"><button class="btn" type="button" data-gmshare="tv">Share...</button><span class="spacer"></span><button class="btn default" type="button" id="tvnew">New game</button></div>`;return}
+  tvStage.innerHTML=tvBoardHTML(b,g.ans,"tv");
+  tvSlip.innerHTML=`<span class="legend">Pick a tile</span><div>Higher numbers are harder and worth more. One tile is a hidden <b>bonus</b> worth double.</div><div class="actions"><span class="spacer"></span><button class="btn" type="button" id="tvnew">${TV.newArm?"Click again to start over":"New game"}</button></div>`;
+}
+function tvAnswer(j){const g=TV.game,b=tvB(),i=g.open;if(i==null||g.ans[i])return;const c=b.cells[i],ok=c.opts[j]===c.a;g.ans[i]={pick:j,ok};
+  if(ok){gmAnswer("trivia",true);if(i===b.bonus)gmAddXP(10)}
+  if(Object.keys(g.ans).length===b.cells.length){const sc=tvScore(b,g.ans);TV.games++;if(sc>TV.best)TV.best=sc;GM.st.tvGames=(GM.st.tvGames||0)+1;GM.st.tvBest=Math.max(GM.st.tvBest||0,sc);gmAddXP(50);gmSave();gmCheckBadges();gmSyncSoon(true);
+    GM.share.tv=`Atlas95 Trivia Board\n${sc.toLocaleString("en-US")} of ${tvMax(b).toLocaleString("en-US")} points\n${b.cats.join(" · ")}`}
+  tvSave();tvRender()}
+document.getElementById("twin").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.tv!=null){TV.game.open=+b.dataset.tv;tvSave();tvRender();return}
+  if(b.dataset.tva!=null){if(!b.disabled)tvAnswer(+b.dataset.tva);return}
+  if(b.hasAttribute("data-tvback")){TV.game.open=null;tvSave();tvRender();return}
+  if(b.id==="tvnew"){const left=tvB().cells.length-Object.keys(TV.game.ans).length;if(left&&Object.keys(TV.game.ans).length&&!TV.newArm){TV.newArm=true;tvRender();setTimeout(()=>{TV.newArm=false;if(!TV.game.open)tvRender()},3000);return}TV.newArm=false;tvNew();return}
+});
+
+// ---------- daily trivia (9 tiles, same board for everyone each day) ----------
+GM.trun=store.get("gm.trun")||null;if(!GM.st.trivia)GM.st.trivia={};
+const gmTrivBox=()=>{let d=document.getElementById("gmtriv");if(!d){d=document.createElement("div");d.id="gmtriv";document.body.appendChild(d)}return d};
+const gmTrivOpen=()=>{const d=document.getElementById("gmtriv");return !!(d&&d.innerHTML)};
+const TV16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="1.5" width="15" height="13" fill="#c0c0c0" stroke="#000"/><path d="M5.5 1.5v13M10.5 1.5v13M.5 6h15M.5 10.5h15" stroke="#000"/><path d="M1.5 2.5h3v3h-3z" fill="#ffd800"/><path d="M11.5 7h3v3h-3z" fill="#7fd67f"/><path d="M6.5 11.5h3v2h-3z" fill="#ff8080"/></svg>';
+const gmTrivB=()=>{const d=gmToday();if(!GM._tb||GM._tb.d!==d)GM._tb=Object.assign(tvBuild("daily-trivia|"+d,3,3,false),{d});return GM._tb};
+function gmOpenTrivia(){setMenu(false);if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(!GM.trun||GM.trun.date!==gmToday()){GM.trun={date:gmToday(),ans:{},open:null};store.set("gm.trun",GM.trun)}gmRenderTrivia()}
+function gmCloseTrivia(noChain){if(GM.trun)store.set("gm.trun",GM.trun);gmTrivBox().innerHTML="";buildStart();if(gmScoresOpen())gmRenderScores();if(!noChain)gmChain(!!GM.st.trivia[gmToday()])}
+function gmTrivFrame(body,title){return `<div class="scrim gmscrim"><div class="dlg wide gmd" role="dialog" aria-modal="true" aria-labelledby="gmtt1"><div class="titlebar">${TV16}<span class="t" id="gmtt1">${esc(title||"Daily Trivia")} - ${esc(gmNiceDate(gmToday()))}</span><div class="tbtns"><button class="tbtn" type="button" data-gtclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}</div></div></div>`}
+function gmRenderTrivia(){
+  const box=gmTrivBox(),b=gmTrivB(),r=GM.trun,done=GM.st.trivia[gmToday()];
+  if(done&&r.open==null){gmTrivDone(box);return}
+  const score=tvScore(b,r.ans);
+  if(r.open!=null){box.innerHTML=gmTrivFrame(`<div class="gmqhead"><span>Score: <b>${score}</b></span><span>${Object.keys(r.ans).length} of 9 answered</span></div>`+tvQuestionHTML(b,r.open,r.ans,"gt"));
+    const f=box.querySelector(r.ans[r.open]?"[data-gtback]":".choice");if(f&&matchMedia("(pointer:fine)").matches)f.focus({preventScroll:true});return}
+  const started=Object.keys(r.ans).length>0;
+  box.innerHTML=gmTrivFrame(`${started?"":`<div><b>9 tiles, 3 categories.</b> Pick any tile. Bigger numbers are harder and worth more. Everyone gets the same board today.</div>`}
+    <div class="gmqhead"><span>Score: <b>${score}</b> of ${tvMax(b)}</span><span>${Object.keys(r.ans).length} of 9 answered</span></div>${tvBoardHTML(b,r.ans,"gt")}
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-gtclose>${started?"Save & close":"Not now"}</button></div>`);
+}
+function gmTrivAnswer(j){const r=GM.trun,b=gmTrivB(),i=r.open;if(i==null||r.ans[i])return;const c=b.cells[i],ok=c.opts[j]===c.a;r.ans[i]={pick:j,ok};
+  if(ok)gmAnswer("trivia",true);
+  if(Object.keys(r.ans).length===9&&!GM.st.trivia[gmToday()]){const s=tvScore(b,r.ans),m=b.cells.map((x,k)=>r.ans[k]&&r.ans[k].ok?"1":"0").join("");GM.st.trivia[gmToday()]={s,m};gmAddXP(Math.round(s/20));gmSave();gmCheckBadges();gmSyncSoon(true)}
+  store.set("gm.trun",r);gmRenderTrivia()}
+function gmTrivDone(box){
+  const t=gmToday(),d=GM.st.trivia[t],b=gmTrivB(),others=(gmPlayers||[]).filter(p=>p.id!==gmUid&&p.tdaily&&p.tdaily.d===t).map(p=>p.tdaily.s),pc=tvPercent(d.s,others);
+  const grid=[0,1,2].map(row=>[0,1,2].map(col=>{const i=b.cells.findIndex(x=>x.ci===col&&x.t===row);return d.m[i]==="1"?"🟩":"🟥"}).join("")).join("\n");
+  GM.share.trivia=`Atlas95 Daily Trivia · ${gmNiceDate(t)}\n${d.s} of ${tvMax(b)} points\n${grid}`;
+  const n=[...d.m].filter(x=>x==="1").length;
+  box.innerHTML=gmTrivFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">🧠</span><div><span class="big">${d.s}</span><br>points out of ${tvMax(b)} &middot; ${n} of 9 right<br>${pc!=null?`You scored better than <b>${pc}%</b> of today's players.`:gmDbState==="on"?"You're the first to finish today!":"Come back tomorrow for a new board."}</div></div>
+    ${tvBoardHTML(b,Object.fromEntries([...d.m].map((x,i)=>[i,{ok:x==="1"}])),"gt")}
+    <div class="actions"><button class="btn" type="button" data-gmshare="trivia">Share...</button><button class="btn" type="button" data-gm="lbtriv">Leaderboard</button><span class="spacer"></span><button class="btn default" type="button" data-gtclose>OK</button></div>`,"Daily Trivia complete");
+  box.querySelector(".btn.default").focus({preventScroll:true});
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[data-gt],[data-gta],[data-gtback]");if(!b)return;
+  if(b.hasAttribute("data-gtclose")){gmCloseTrivia();return}
+  if(b.dataset.gt!=null){GM.trun.open=+b.dataset.gt;store.set("gm.trun",GM.trun);gmRenderTrivia();return}
+  if(b.dataset.gta!=null){if(!b.disabled)gmTrivAnswer(+b.dataset.gta);return}
+  if(b.hasAttribute("data-gtback")){GM.trun.open=null;store.set("gm.trun",GM.trun);gmRenderTrivia();return}
+});
 
 // ================= Desktop: programs, taskbar, Start menu =================
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
 const GUITAR16=document.querySelector("#gwin .titlebar svg").outerHTML;
 const FLASK16=document.querySelector("#ewin .titlebar svg").outerHTML;
-const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
+const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},trivia:{label:"Trivia Board",sub:"Pick a tile, win points",icon:document.querySelector("#twin .titlebar svg").outerHTML,win:document.getElementById("twin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
 const saved=store.get("ad.apps")||{};
 let activeApp=APPS[saved.active]?saved.active:"atlas";
 Object.keys(APPS).forEach(k=>{APPS[k].open=false;APPS[k].min=false});
@@ -2982,11 +3136,11 @@ function refreshDesktop(){
 function showApp(k){
   APPS[k].open=true;APPS[k].min=false;activeApp=k;refreshDesktop();
   if(k==="atlas"){layout();if(state.view==="quiz"&&state.target&&state.phase==="ask")focusTarget(false)}
-  else if(k==="guitar")gRender();else if(k==="elements")eRender();else if(k==="phrases")pRender();else if(k==="anatomy")aRender();else if(k==="civics")cRender();else if(k==="scores")gmRenderScores();else if(k==="stars")kRender();else wRender();
+  else if(k==="guitar")gRender();else if(k==="elements")eRender();else if(k==="phrases")pRender();else if(k==="anatomy")aRender();else if(k==="civics")cRender();else if(k==="scores")gmRenderScores();else if(k==="stars")kRender();else if(k==="trivia")tvRender();else wRender();
   window.scrollTo(0,0);
 }
 function minimizeApp(k){APPS[k].min=true;refreshDesktop()}
-function closeApp(k){APPS[k].open=false;APPS[k].min=false;({atlas:dlg,guitar:gDlg,elements:eDlg,phrases:pDlg,anatomy:aDlg,civics:cDlg,words:wDlg,scores:gmSDlg,stars:kDlg})[k].innerHTML="";
+function closeApp(k){APPS[k].open=false;APPS[k].min=false;({atlas:dlg,guitar:gDlg,elements:eDlg,phrases:pDlg,anatomy:aDlg,civics:cDlg,words:wDlg,scores:gmSDlg,stars:kDlg,trivia:document.createElement("div")})[k].innerHTML="";
   const other=Object.keys(APPS).find(o=>o!==k&&APPS[o].open&&!APPS[o].min);if(other&&activeApp===k){showApp(other);return}refreshDesktop()}
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-min],[data-closeapp],[data-task],[data-open]");if(!t)return;
@@ -3009,7 +3163,7 @@ function deskLayout(){
   // saved spots first (if they still fit on this screen)
   icons.forEach(el=>{const p=deskPos[iconKey(el)];if(p&&p.c<g.cols&&!taken.has(p.c+","+p.r)){place[iconKey(el)]=p;taken.set(p.c+","+p.r,1)}});
   // default: Daily Challenge and Scoreboard sit at the bottom of the first column
-  const R=g.cols-1,defaults={"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"scores":{c:R,r:2}};
+  const R=g.cols-1,defaults={"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"gm-trivia":{c:R,r:2},"scores":{c:R,r:3}};
   icons.forEach(el=>{const k=iconKey(el),d=defaults[k];if(!place[k]&&d&&!taken.has(d.c+","+d.r)){place[k]=d;taken.set(d.c+","+d.r,1)}});
   let i=0;icons.forEach(el=>{const k=iconKey(el);if(place[k])return;let c;do{c=cellOf(i++,g)}while(taken.has(c.c+","+c.r));place[k]=c;taken.set(c.c+","+c.r,1)});
   let maxR=g.rows-1;icons.forEach(el=>{const p=place[iconKey(el)];el.style.left=p.c*CELL_W+"px";el.style.width=Math.min(92,CELL_W-4)+"px";el.style.top=p.r*CELL_H+"px";if(p.r>maxR)maxR=p.r});
@@ -3040,6 +3194,7 @@ function buildStart(){
   let h=Object.entries(APPS).map(([k,a])=>`<li><button type="button" class="prog-item" data-app="${k}">${a.icon}${a.label} <span class="sub">(${a.sub})</span></button></li>`).join("")+gmStartItems()+`<li><hr></li>`;
   if(!APPS[activeApp].open){}
   else if(activeApp==="scores"){h+=gmStartScores()}
+  else if(activeApp==="trivia"){h+=`<li><button type="button" data-gm="trivia">Daily Trivia (9 tiles)</button></li><li><button type="button" data-tvnewm>New Trivia Board</button></li>`}
   else if(activeApp==="stars"){h+=KGROUPS.map(g=>`<li><button type="button" data-kgm="${esc(g)}">${esc(g)}</button></li>`).join("")+`<li><button type="button" data-kgm="Mix">Mix sections...</button></li><li><hr></li>`+Object.entries(KMODES).map(([k,v])=>`<li><button type="button" data-kmm="${k}">Quiz: ${v}</button></li>`).join("")+`<li><button type="button" data-kvm="study">Study mode</button></li>`}
   else if(activeApp==="atlas"){
     h+=REGIONS.map(c=>`<li><button type="button" data-k="${c.k}">${c.k}</button></li>`).join("")+`<li><button type="button" data-k="Mix">Mix continents...</button></li>`
@@ -3076,6 +3231,7 @@ sm.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   setMenu(false);
   if(b.dataset.app){showApp(b.dataset.app);return}
   if(b.dataset.gm){gmMenu(b.dataset.gm);return}
+  if(b.hasAttribute("data-tvnewm")){showApp("trivia");tvNew();return}
   if(b.dataset.kgm){showApp("stars");kSetGroup(b.dataset.kgm);return}
   if(b.dataset.kmm){showApp("stars");kSetMode(b.dataset.kmm);return}
   if(b.dataset.kvm){showApp("stars");kSetView("study");return}
