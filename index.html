@@ -2730,8 +2730,9 @@ function gmRenderDailyDone(box){
   box.innerHTML=gmDailyFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">${tp.emo}</span><div><span class="big">${d.s}/5</span><br><b>${esc(tp.label)}</b> &middot; ${GM_CLOCK} ${gmFmtT(d.ms)}<br>${msg}</div></div>
     <div class="gmmarksbig">${gmMarks(d.m,5)}</div>
     <div class="props" style="grid-template-columns:auto 1fr"><dt>Streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}${str>=GM.st.bestStreak&&str>1?" (your best!)":""}</dd>${GM.dailyBonus?`<dt>XP earned</dt><dd>+${GM.dailyBonus+d.s*20} XP</dd>`:""}<dt>Next challenge</dt><dd>in ${hh}h ${mm}m</dd></div>
-    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button><button class="btn" type="button" data-gm="lb">Leaderboard</button>${!(GM.st.trivia&&GM.st.trivia[gmToday()])?`<button class="btn" type="button" data-gm="trivia">Daily trivia</button>`:""}${gmLes()&&!GM.st.lessons[gmToday()]?`<button class="btn" type="button" data-gm="lesson">Today's lesson</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
-  box.querySelector(".btn.default").focus({preventScroll:true});
+    ${gmMiniBoard("daily")}
+    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button>${!(GM.st.trivia&&GM.st.trivia[gmToday()])?`<button class="btn" type="button" data-gm="trivia">Daily trivia</button>`:""}${gmLes()&&!GM.st.lessons[gmToday()]?`<button class="btn" type="button" data-gm="lesson">Today's lesson</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
+  gmDoneFocus(box);
 }
 
 // ---------- daily lesson: one subject, a set number of questions every day, missed items come back sooner ----------
@@ -2817,8 +2818,9 @@ function gmLesFinish(){const r=GM.lrun,t=gmToday(),right=r.ans.filter(a=>a.ok).l
   GM.share.lesson=`Atlas95 Daily Lesson · ${gmNiceDate(t)}\n${gmLesEmo(r.topic)} ${gmLesName(r.topic,r.lang)}: ${firstRight}/${r.n} on the first try${str>1?`\n🔥 ${str}-day lesson streak`:""}`;
   gmLesBox().innerHTML=gmLesFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">${gmLesEmo(r.topic)}</span><div><span class="big">${firstRight}/${r.n}</span><br>on the first try${r.extra.length?`, plus ${r.extra.length} redo${r.extra.length===1?"":"s"}`:""}<br><b>${r.practice?"Practice round done.":"Lesson complete!"}</b></div></div>
     <dl class="props gmprops"><dt>Lesson streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}</dd><dt>Learned</dt><dd>${learned} of ${pool} ${esc(r.topic==="phrases"?"phrases":"items")}</dd>${bonus?`<dt>Bonus</dt><dd>+${bonus} XP</dd>`:""}</dl>
+    ${r.practice?"":gmMiniBoard("lesson")}
     <div class="actions"><button class="btn" type="button" data-gmshare="lesson">Share...</button><button class="btn" type="button" id="glstart" data-practice="1">Practice more</button><span class="spacer"></span><button class="btn default" type="button" data-glclose>Done</button></div>`,"Daily Lesson complete");
-  gmLesBox().querySelector(".btn.default").focus({preventScroll:true});
+  gmDoneFocus(gmLesBox());
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-glclose],[data-glsub],[data-gllen],[data-glc],[data-glplay],[data-glsay],#glstart,#glchange,#glsave,#glcancel,#glnext,#glpop");if(!b)return;
@@ -2856,7 +2858,7 @@ async function gmConnectSupabase(){
     if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
     gmUid=session.user.id;gmDbState="on";gmLastSync="";
     const load=async()=>{const {data,error}=await sb.from("players").select("id,data").order("updated_at",{ascending:false}).limit(500);if(error)return;
-      gmPlayers=data.map(r=>Object.assign({},r.data,{id:r.id}));if(gmScoresOpen()&&GM.tab==="lb")gmRenderScores()};
+      gmPlayers=data.map(r=>Object.assign({},r.data,{id:r.id}));if(gmScoresOpen()&&GM.tab==="lb")gmRenderScores();gmRefreshMini()};
     gmDB={remove:async()=>{const {error}=await sb.from("players").delete().eq("id",gmUid);if(error)throw error;await load()},save:async p=>{const {error}=await sb.from("players").upsert({id:gmUid,data:p,updated_at:new Date().toISOString()});if(error){const e=new Error(error.message);e.code=error.code==="42501"?"invalid_argument":"unavailable";throw e}load()},refresh:load};
     await load();gmSync();setInterval(()=>{if(gmScoresOpen()&&document.visibilityState!=="hidden")load()},60000);
     if(gmScoresOpen())gmRenderScores();
@@ -2868,11 +2870,41 @@ async function gmConnect(){
     const [db,u]=await Promise.all([claude.use("db"),claude.use("user")]);if(!db||!u){gmDbState="off";if(gmScoresOpen())gmRenderScores();return}
     const id=await u.id();if(!id){gmDbState="off";if(gmScoresOpen())gmRenderScores();return}
     gmDB={save:p=>db.doc("players/"+id).set(p)};gmU=u;gmUid=id;gmDbState="on";gmLastSync="";
-    db.collection("players").onSnapshot(snap=>{gmPlayers=snap.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id},d.data()));if(gmScoresOpen()&&GM.tab==="lb")gmRenderScores()},
+    db.collection("players").onSnapshot(snap=>{gmPlayers=snap.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id},d.data()));gmRefreshMini();if(gmScoresOpen()&&GM.tab==="lb")gmRenderScores()},
       err=>{gmDbState="off";if(gmScoresOpen())gmRenderScores()});
     gmSync();if(gmScoresOpen())gmRenderScores();
   }catch(e){gmDbState="off"}
 }
+
+
+// ---------- after finishing a daily activity: ask for a leaderboard name, then show where you rank ----------
+function gmMiniRows(kind){const t=gmToday(),y=gmDayNum(t);let list=(gmPlayers||[]).slice();const me=gmPayload();
+  if(gmUid&&!list.some(p=>p.id===gmUid))list.push(Object.assign({id:gmUid},me));else list=list.map(p=>p.id===gmUid?Object.assign({},p,me,{id:gmUid}):p);
+  let val,show;
+  if(kind==="daily"){list=list.filter(p=>p.daily&&p.daily.d===t);list.sort((a,b)=>b.daily.s-a.daily.s||a.daily.ms-b.daily.ms);show=p=>`${gmMarks(p.daily.m||"",5)} ${p.daily.s}/5 &middot; ${gmFmtT(p.daily.ms)}`}
+  else if(kind==="trivia"){list=list.filter(p=>p.tdaily&&p.tdaily.d===t);list.sort((a,b)=>b.tdaily.s-a.tdaily.s);show=p=>`${p.tdaily.s} pts`}
+  else{const ls=p=>p.lessonDay&&y-gmDayNum(p.lessonDay)<=1?p.lstreak||0:0;list=list.filter(p=>ls(p)>0);list.sort((a,b)=>ls(b)-ls(a));show=p=>`${GM_FIRE} ${ls(p)} day${ls(p)===1?"":"s"}`}
+  return {list,show};
+}
+function gmMiniTable(kind){
+  if(gmDbState!=="on")return `<div class="note">${gmDbState==="connecting"?"Loading the leaderboard...":"The leaderboard is offline right now, but your score is saved on this device."}</div>`;
+  const {list,show}=gmMiniRows(kind);if(!list.length)return `<div class="note">You're the first one on today's board!</div>`;
+  const mi=list.findIndex(p=>p.id===gmUid);let rows=list.slice(0,5).map((p,i)=>[p,i]);if(mi>=5)rows.push([list[mi],mi]);
+  return `<table class="gmtable gmlb"><tbody>${rows.map(([p,i])=>`<tr class="${p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>${p.id===gmUid?" (you)":""}</td><td style="text-align:right">${show(p)}</td></tr>`).join("")}</tbody></table>${list.length>1?`<div class="note">${mi===0?"You're in first place!":`You're #${mi+1} of ${list.length}.`}</div>`:""}`;
+}
+function gmMiniBoard(kind){
+  const title=kind==="daily"?"Today's challenge leaderboard":kind==="trivia"?"Today's trivia leaderboard":"Lesson streaks";
+  const askName=!GM.set.nick&&!GM.nameSkip&&gmDbState!=="off";
+  return `<div class="group gmmini"><span class="legend">${title}</span>
+    ${askName?`<form class="gmnamef" autocomplete="off"><label for="gmnm1"><b>Put your name on the leaderboard</b></label><div class="row"><input class="gmin" id="gmnm1" maxlength="24" placeholder="Your name or nickname" aria-label="Leaderboard name"><button class="btn default" type="submit">Save</button><button class="btn" type="button" data-gmnameskip>Skip</button></div><div class="note">Other players will see this name. Don't use your full name.</div></form>`:""}
+    <div class="gmminitab" data-kind="${kind}">${gmMiniTable(kind)}</div>
+    <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-gm="${kind==="trivia"?"lbtriv":"lb"}">Full leaderboard</button></div></div>`;
+}
+function gmDoneFocus(box){gmResolveNames(box);const n=box.querySelector("#gmnm1");if(n&&matchMedia("(pointer:fine)").matches){n.focus({preventScroll:true});return}const ok=box.querySelector(".dlg-body > .actions .btn.default");if(ok)ok.focus({preventScroll:true})}
+function gmRefreshMini(){document.querySelectorAll(".gmminitab").forEach(el=>{el.innerHTML=gmMiniTable(el.dataset.kind);gmResolveNames(el)})}
+document.addEventListener("submit",e=>{if(!e.target.classList||!e.target.classList.contains("gmnamef"))return;e.preventDefault();const v=e.target.querySelector("input").value.trim().slice(0,24);if(!v){e.target.querySelector("input").focus();return}
+  GM.set.nick=v;gmSave();gmSyncSoon(true);e.target.outerHTML=`<div class="fb ok">Saved! You're on the board as ${esc(v)}.</div>`;gmRefreshMini();if(gmScoresOpen())gmRenderScores()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-gmnameskip]");if(!b)return;GM.nameSkip=true;const f=b.closest("form");if(f)f.remove()});
 
 // ---------- Scoreboard window ----------
 const gmSStage=()=>document.getElementById("sstage");
@@ -2935,7 +2967,7 @@ function gmLbHTML(){
     ${rows?`<div class="gmtwrap"><table class="gmtable gmlb"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`:`<div class="group"><div>${empty}</div></div>`}
     <div class="note">${GM_SB?"Everyone who plays on this site shows up here.":"Everyone who opens this desktop with edit access shows up here."} Set your leaderboard name in <a href="#" class="link" data-gmtab="settings">Settings</a>.</div>`;
 }
-async function gmResolveNames(){if(!gmU){gmSStage().querySelectorAll("[data-pid]").forEach(e=>{e.textContent=e.dataset.nick||"Player"});return}const els=[...gmSStage().querySelectorAll("[data-pid]")];if(!els.length)return;
+async function gmResolveNames(root){root=root||gmSStage();if(!gmU){root.querySelectorAll("[data-pid]").forEach(e=>{e.textContent=e.dataset.nick||"Player"});return}const els=[...root.querySelectorAll("[data-pid]")];if(!els.length)return;
   let ps={};try{ps=await gmU.profiles([...new Set(els.map(e=>e.dataset.pid))])}catch(e){}
   els.forEach(e=>{const p=ps[e.dataset.pid];e.textContent=e.dataset.nick||(p&&p.name)||"Player"})}
 function gmBadgesHTML(){return `<div class="gmbadges">${GM_BADGES.map(b=>{const got=GM.st.badges.includes(b.k);return `<div class="gmbadge${got?" got":""}"><span class="gmbemo" aria-hidden="true">${got?b.emo:"?"}</span><div><b>${esc(b.n)}</b><div class="note">${esc(b.d)}</div>${got?"":'<div class="note"><i>Locked</i></div>'}</div></div>`}).join("")}</div>`}
@@ -3121,8 +3153,9 @@ function gmTrivDone(box){
   const n=[...d.m].filter(x=>x==="1").length;
   box.innerHTML=gmTrivFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">🧠</span><div><span class="big">${d.s}</span><br>points out of ${tvMax(b)} &middot; ${n} of 9 right<br>${pc!=null?`You scored better than <b>${pc}%</b> of today's players.`:gmDbState==="on"?"You're the first to finish today!":"Come back tomorrow for a new board."}</div></div>
     ${tvBoardHTML(b,Object.fromEntries([...d.m].map((x,i)=>[i,{ok:x==="1"}])),"gt")}
-    <div class="actions"><button class="btn" type="button" data-gmshare="trivia">Share...</button><button class="btn" type="button" data-gm="lbtriv">Leaderboard</button><span class="spacer"></span><button class="btn default" type="button" data-gtclose>OK</button></div>`,"Daily Trivia complete");
-  box.querySelector(".btn.default").focus({preventScroll:true});
+    ${gmMiniBoard("trivia")}
+    <div class="actions"><button class="btn" type="button" data-gmshare="trivia">Share...</button><span class="spacer"></span><button class="btn default" type="button" data-gtclose>OK</button></div>`,"Daily Trivia complete");
+  gmDoneFocus(box);
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[data-gt],[data-gta],[data-gtback]");if(!b)return;
   if(b.hasAttribute("data-gtclose")){gmCloseTrivia();return}
