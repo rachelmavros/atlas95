@@ -309,6 +309,24 @@ a.link:visited{color:#551a8b}
 .big{font-size:40px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--sel)}
 .missed{box-shadow:var(--sunken);background:var(--hi);padding:6px 8px;max-height:120px;overflow:auto;font-size:12.5px}
 .dlg .actions{justify-content:flex-end}
+/* game vault (each game adds its own styles when it loads) */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,44%),1fr));gap:6px;background:var(--hi);box-shadow:var(--sunken);padding:10px}
+@media (max-width:520px){.vgrid{padding:6px;gap:2px}.vtile{padding:8px 2px}.vblurb{display:none}}
+.vtile{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:none;border:0;padding:10px 6px;cursor:pointer;font:13px var(--ui);color:var(--ink)}
+.vtile b{padding:1px 4px}
+.vtile:hover b,.vtile:focus-visible b{background:var(--sel);color:var(--hi)}
+.vtile:focus-visible{outline:1px dotted var(--ink);outline-offset:-2px}
+.vblurb{font-size:11.5px;color:#303030}
+.vbest{font-size:11.5px;font-weight:700;color:var(--done-ink)}
+.vgbar{display:contents}
+.vgame{display:flex;flex-direction:column;gap:10px}
+/* daily lesson list */
+.gmlist{display:flex;flex-direction:column;gap:6px}
+.gmlrow{display:flex;align-items:center;gap:8px;background:var(--hi);box-shadow:var(--sunken);padding:6px 8px}
+.gmlrow.done{background:#eaf7ea}
+.gmlemo{font-size:22px;flex:0 0 auto}
+.gmlmid{flex:1;min-width:0}
+.gmlrow .btn{flex:0 0 auto}
 /* add-to-home-screen balloon (tray-style tip above the clock) */
 .a2b{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:calc(44px + env(safe-area-inset-bottom,0px));z-index:22;width:min(300px,calc(100vw - 16px));
   background:var(--tip);color:var(--ink);border:1px solid var(--dark);border-radius:6px;padding:8px 10px 10px;box-shadow:3px 3px 0 rgba(0,0,0,.3);font-size:12.5px}
@@ -345,6 +363,8 @@ a.link:visited{color:#551a8b}
 </style>
 
 <div class="desk" id="desk" hidden>
+  <button class="dicon" type="button" data-open="vault"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg><span>Game Vault</span></button>
+  <button class="dicon" type="button" data-gm="word"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg><span>Daily Word</span></button>
   <button class="dicon" type="button" data-gm="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" fill="#fff" stroke="#000"/><path d="M1.5 2.5h13v3h-13z" fill="#c00000" stroke="#000"/><path d="M5.8 7.6h4.4v4.4H5.8zM5.8 9.8h4.4M8 7.6v4.4" fill="#ffd800" stroke="#000" stroke-width=".7"/><path d="M4.5 1v3M11.5 1v3" stroke="#000"/></svg><span>Daily Trivia</span></button>
   <button class="dicon" type="button" data-open="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="1.5" width="15" height="13" fill="#c0c0c0" stroke="#000"/><path d="M5.5 1.5v13M10.5 1.5v13M.5 6h15M.5 10.5h15" stroke="#000"/><path d="M1.5 2.5h3v3h-3z" fill="#ffd800"/><path d="M11.5 7h3v3h-3z" fill="#7fd67f"/><path d="M6.5 11.5h3v2h-3z" fill="#ff8080"/></svg><span>Trivia Board</span></button>
   <button class="dicon" type="button" data-gm="lesson"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5L15 6 8 9.5 1 6z" fill="#000080" stroke="#000" stroke-linejoin="round"/><path d="M4 7.6v3.2c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V7.6L8 9.5z" fill="#3a6ea5" stroke="#000" stroke-linejoin="round"/><path d="M13.6 6.7v4.6" stroke="#c00000" stroke-width="1.2"/><circle cx="13.6" cy="11.8" r="1" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg><span>Daily Lesson</span></button>
@@ -581,6 +601,18 @@ a.link:visited{color:#551a8b}
   </div>
   <div class="status"><span id="gst1"></span><span id="gst2"></span><span id="gst3"></span></div>
   <div id="gdialog"></div>
+</div>
+
+<div class="win" id="vwin" hidden>
+  <div class="titlebar">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>
+    <span class="t" id="vtitle">Game Vault</span>
+    <div class="tbtns"><button class="tbtn" type="button" data-min="vault" aria-label="Minimize">_</button><span class="tbtn" aria-hidden="true">□</span><button class="tbtn" type="button" data-closeapp="vault" aria-label="Close">✕</button></div>
+  </div>
+  <div class="menubar" id="vbar"></div>
+  <div class="sheet" id="vstage"></div>
+  <div class="status"><span id="vst1"></span><span id="vst2"></span><span id="vst3"></span></div>
+  <div id="vdialog"></div>
 </div>
 
 <div class="taskbar">
@@ -2469,7 +2501,7 @@ const gmTitle=L=>GM_TITLES[Math.min(L-1,GM_TITLES.length-1)];
 const GM={set:Object.assign({timer:false,popup:true,topics:null,nick:""},store.get("gm.set")||{}),
   st:store.get("gm.st"),timers:store.get("gm.timers")||{},bestT:store.get("gm.bestT")||{},run:store.get("gm.run")||null,
   tab:"me",lb:"today",share:{},resetArm:false};
-const gmFreshStats=()=>({xp:0,answers:0,first:0,sections:0,perfects:0,apps:{},dailies:{},lessons:{},trivia:{},badges:[],bestStreak:0});
+const gmFreshStats=()=>({xp:0,answers:0,first:0,sections:0,perfects:0,apps:{},dailies:{},lessons:{},ldone:{},trivia:{},badges:[],bestStreak:0});
 let gmSeeded=false;
 if(!GM.st){GM.st=gmFreshStats();gmSeeded=true}
 GM.st=Object.assign(gmFreshStats(),GM.st);
@@ -2516,7 +2548,16 @@ const GM_BADGES=[
   {k:"trivia9",emo:"🎯",n:"Clean sweep",d:"Get all 9 daily trivia tiles right",t:s=>Object.values(s.trivia||{}).some(d=>d.m==="111111111")},
   {k:"lesson1",emo:"🎒",n:"Back to school",d:"Finish a daily lesson",t:s=>s.lessons&&Object.keys(s.lessons).length>=1},
   {k:"lesson7",emo:"📚",n:"Habit formed",d:"Do your daily lesson 7 days in a row",t:()=>typeof gmLesStreak==="function"&&gmLesStreak()>=7},
-  {k:"learn50",emo:"🧠",n:"Memory palace",d:"Learn 50 items in daily lessons",t:()=>Object.values(GM.mem||{}).reduce((a,m)=>a+Object.values(m).filter(x=>x.b>=3).length,0)>=50}];
+  {k:"learn50",emo:"🧠",n:"Memory palace",d:"Learn 50 items in daily lessons",t:()=>Object.values(GM.mem||{}).reduce((a,m)=>a+Object.values(m).filter(x=>x.b>=3).length,0)>=50},
+  {k:"lessons3",emo:"🗂️",n:"Course load",d:"Finish 3 different daily lessons in one day",t:s=>Object.values(s.ldone||{}).some(d=>Object.keys(d).length>=3)},
+  {k:"vault1",emo:"🕹️",n:"Player one",d:"Play a game in the Game Vault",t:()=>!!GV&&vPlays()>=1},
+  {k:"vault50",emo:"👾",n:"Arcade regular",d:"Play 50 Game Vault games",t:()=>!!GV&&vPlays()>=50},
+  {k:"word1",emo:"🔤",n:"Wordsmith",d:"Solve a Daily Word",t:()=>!!GV&&(vSt("word").wins||0)>=1},
+  {k:"word3",emo:"🧙",n:"Word wizard",d:"Solve a Daily Word in 3 guesses or fewer",t:()=>!!GV&&(vSt("word").min||9)<=3},
+  {k:"snake25",emo:"🐍",n:"Snake charmer",d:"Eat 25 apples in one game of Snake",t:()=>!!GV&&(vSt("snake").best||0)>=25},
+  {k:"circle95",emo:"⭕",n:"Steady hand",d:"Draw a circle that's 95% perfect",t:()=>!!GV&&(vSt("circle").best||0)>=95},
+  {k:"memory0",emo:"🃏",n:"Photographic memory",d:"Clear Memory Match without a single miss",t:()=>!!GV&&!!vSt("memory").flawless},
+  {k:"c4hard",emo:"🔴",n:"Four in a row",d:"Beat the computer at Connect Four on Hard",t:()=>!!GV&&(vSt("connect4").hardW||0)>=1}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -2675,7 +2716,7 @@ function gmChain(finished){if(finished&&GM.popq.length)setTimeout(gmNextPopup,25
 function gmNextPopup(){const t=gmToday();while(GM.popq.length){const k=GM.popq.shift();
   if(k==="daily"&&!GM.st.dailies[t]){gmOpenDaily();return}
   if(k==="trivia"&&!(GM.st.trivia&&GM.st.trivia[t])){gmOpenTrivia();return}
-  if(k==="lesson"&&gmLes()&&!GM.st.lessons[t]){gmOpenLesson();return}}}
+  if(k==="lesson"&&gmLesPending(true).length){gmOpenLesson();return}}}
 function gmEscape(){if(document.getElementById("gmcopy")&&document.getElementById("gmcopy").innerHTML){document.getElementById("gmcopy").innerHTML="";return}if(gmDailyOpen())gmCloseDaily();else if(gmLesOpen())gmCloseLesson();else if(gmTrivOpen())gmCloseTrivia()}
 const gmMarks=(m,n)=>{let o='<span class="gmmarks" aria-hidden="true">';for(let i=0;i<(n||5);i++){const c=m[i];o+=`<i class="${c==="1"?"ok":c==="0"?"no":""}">${c==="1"?"✓":c==="0"?"✗":""}</i>`}return o+"</span>"};
 function gmDailyFrame(body,title){return `<div class="scrim gmscrim"><div class="dlg wide gmd" role="dialog" aria-modal="true" aria-labelledby="gmdt1"><div class="titlebar">${STAR16}<span class="t" id="gmdt1">${esc(title||"Daily Challenge")} - ${esc(gmNiceDate(gmToday()))}</span><div class="tbtns"><button class="tbtn" type="button" data-gmdclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}</div></div></div>`}
@@ -2749,19 +2790,29 @@ function gmRenderDailyDone(box){
     <div class="gmmarksbig">${gmMarks(d.m,5)}</div>
     <div class="props" style="grid-template-columns:auto 1fr"><dt>Streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}${str>=GM.st.bestStreak&&str>1?" (your best!)":""}</dd>${GM.dailyBonus?`<dt>XP earned</dt><dd>+${GM.dailyBonus+d.s*20} XP</dd>`:""}<dt>Next challenge</dt><dd>in ${hh}h ${mm}m</dd></div>
     ${gmMiniBoard("daily")}
-    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button>${!(GM.st.trivia&&GM.st.trivia[gmToday()])?`<button class="btn" type="button" data-gm="trivia">Daily trivia</button>`:""}${gmLes()&&!GM.st.lessons[gmToday()]?`<button class="btn" type="button" data-gm="lesson">Today's lesson</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
+    <div class="actions"><button class="btn" type="button" data-gmshare="daily">Share...</button>${!(GM.st.trivia&&GM.st.trivia[gmToday()])?`<button class="btn" type="button" data-gm="trivia">Daily trivia</button>`:""}${gmLesPending().length?`<button class="btn" type="button" data-gm="lesson">Today's lesson${gmLessons().length>1?"s":""}</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-gmdclose>OK</button></div>`,"Daily Challenge complete");
   gmDoneFocus(box);
 }
 
-// ---------- daily lesson: one subject, a set number of questions every day, missed items come back sooner ----------
+// ---------- daily lessons: one or more subjects, a set number of questions each every day, missed items come back sooner ----------
 const GM_LEN={short:5,medium:10,long:20};
 const GM_IVL=[0,1,2,4,7,15,30];
-GM.mem=store.get("gm.mem")||{};GM.lrun=store.get("gm.lrun")||null;GM.lsetup=false;
+GM.mem=store.get("gm.mem")||{};GM.lrun=store.get("gm.lrun")||null;GM.lsetup=false;GM.ledit=null;GM.lcur=null;
 if(!GM.st.lessons)GM.st.lessons={};
-const gmLes=()=>GM.set.lesson||null;
+if(!GM.st.ldone)GM.st.ldone={};
+// there used to be a single lesson in GM.set.lesson; it becomes the first one in the list
+if(!GM.set.lessons){GM.set.lessons=GM.set.lesson?[Object.assign({id:"l1"},GM.set.lesson)]:[];delete GM.set.lesson;
+  const t=gmToday(),d=GM.st.lessons[t];if(d&&GM.set.lessons[0]&&!GM.st.ldone[t])GM.st.ldone[t]={l1:{right:d.right,total:d.total,n:d.n}};
+  if(GM.lrun&&!GM.lrun.lid&&GM.set.lessons[0]){GM.lrun.lid="l1";store.set("gm.lrun",GM.lrun)}gmSave()}
+const gmLessons=()=>GM.set.lessons||[];
+const gmLesDone=id=>(GM.st.ldone[gmToday()]||{})[id]||null;
+const gmLesPending=pop=>gmLessons().filter(L=>!gmLesDone(L.id)&&(!pop||L.popup!==false));
+// the lesson being looked at: the one picked from the list, else the first one not done today
+const gmLes=()=>{const ls=gmLessons();return ls.find(L=>L.id===GM.lcur)||ls.find(L=>!gmLesDone(L.id))||ls[0]||null};
 const gmMemKey=(t,l)=>t+(t==="phrases"?"|"+l:"");
 const gmLesName=(t,l)=>t==="phrases"?(LANGS[l]?LANGS[l].name:"Languages"):gmTopic(t).label;
 const gmLesEmo=t=>gmTopic(t).emo;
+const gmLesSum=()=>{const ls=gmLessons(),left=gmLesPending().length;return !ls.length?"set up":!left?"done today":ls.length===1?gmLesName(ls[0].topic,ls[0].lang):`${left} of ${ls.length} left`};
 const gmPoolSize=(t,l)=>{try{return ({countries:COUNTRIES.filter(c=>featById.has(c.id)).length,flags:COUNTRIES.length,capitals:COUNTRIES.length,states:50,chords:CHORDS.length,elements:ELEMENTS.length,phrases:PHRASES.filter(p=>p[l]).length,bones:ANAT.filter(a=>a.k==="bone").length,muscles:ANAT.filter(a=>a.k==="muscle").length,brain:ANAT.filter(a=>a.k==="brain").length,pres:47,amend:27,medical:WPS.length,stars:CONS.length})[t]||0}catch(e){return 0}};
 const gmLearned=(t,l)=>{const m=GM.mem[gmMemKey(t,l)]||{};return Object.values(m).filter(x=>x.b>=3).length};
 function gmLesStreak(){const ds=GM.st.lessons,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
@@ -2772,36 +2823,64 @@ const gmLesBox=()=>{let d=document.getElementById("gmlesson");if(!d){d=document.
 const gmLesOpen=()=>{const d=document.getElementById("gmlesson");return !!(d&&d.innerHTML)};
 const GRAD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5L15 6 8 9.5 1 6z" fill="#000080" stroke="#000" stroke-linejoin="round"/><path d="M4 7.6v3.2c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V7.6L8 9.5z" fill="#3a6ea5" stroke="#000" stroke-linejoin="round"/><path d="M13.6 6.7v4.6" stroke="#c00000" stroke-width="1.2"/><circle cx="13.6" cy="11.8" r="1" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg>';
 function gmLesFrame(body,title){return `<div class="scrim gmscrim"><div class="dlg wide gmd" role="dialog" aria-modal="true" aria-labelledby="gmlt1"><div class="titlebar">${GRAD16}<span class="t" id="gmlt1">${esc(title||"Daily Lesson")}</span><div class="tbtns"><button class="tbtn" type="button" data-glclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}</div></div></div>`}
-function gmOpenLesson(setup){setMenu(false);if(gmDailyOpen())gmCloseDaily(true);GM.lsetup=!!setup||!gmLes();if(GM.lrun&&GM.lrun.date!==gmToday()&&!GM.lrun.practice){GM.lrun=null;store.set("gm.lrun",null)}gmRenderLesson()}
+// setup: undefined opens normally, "new" adds a subject, a lesson id edits that lesson
+function gmOpenLesson(setup){setMenu(false);if(gmDailyOpen())gmCloseDaily(true);
+  if(GM.lrun&&GM.lrun.date!==gmToday()&&!GM.lrun.practice){GM.lrun=null;store.set("gm.lrun",null)}
+  GM.lpick=null;GM.lcur=GM.lrun&&gmLessons().some(L=>L.id===GM.lrun.lid)?GM.lrun.lid:null;
+  GM.ledit=setup&&setup!=="new"&&gmLessons().some(L=>L.id===setup)?setup:null;GM.lsetup=!!setup||!gmLessons().length;
+  gmRenderLesson()}
 function gmCloseLesson(noChain){if(GM.lrun)store.set("gm.lrun",GM.lrun);gmLesBox().innerHTML="";buildStart();if(gmScoresOpen())gmRenderScores();if(!noChain)gmChain(!!GM.st.lessons[gmToday()])}
 function gmRenderLesson(){
-  const box=gmLesBox(),L=gmLes();
-  if(GM.lsetup||!L){gmLesSetup(box);return}
-  const r=GM.lrun;
-  if(r&&(r.date===gmToday()||r.practice)&&r.topic===L.topic&&(r.topic!=="phrases"||r.lang===L.lang)){gmLesQ(box);return}
-  const done=GM.st.lessons[gmToday()],n=GM_LEN[L.len]||10,learned=gmLearned(L.topic,L.lang),pool=gmPoolSize(L.topic,L.lang),str=gmLesStreak();
+  const box=gmLesBox(),ls=gmLessons();
+  if(GM.lsetup||!ls.length){gmLesSetup(box);return}
+  const r=GM.lrun,L=gmLes();
+  if(r&&r.lid===L.id&&(ls.length===1||GM.lcur===r.lid)&&(r.date===gmToday()||r.practice)&&r.topic===L.topic&&(r.topic!=="phrases"||r.lang===L.lang)){gmLesQ(box);return}
+  if(ls.length>1&&!GM.lcur){gmLesList(box);return}
+  const done=gmLesDone(L.id),n=GM_LEN[L.len]||10,learned=gmLearned(L.topic,L.lang),pool=gmPoolSize(L.topic,L.lang),str=gmLesStreak();
   const pct=pool?Math.round(learned/pool*100):0;
   box.innerHTML=gmLesFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">${gmLesEmo(L.topic)}</span><div><span class="answer">${esc(gmLesName(L.topic,L.lang))}</span><div>${done?`<b>Done for today!</b> ${done.right} of ${done.total} right.`:`Today's lesson: <b>${n} questions</b>`}</div></div></div>
     <div><div class="note" style="margin-bottom:3px">Learned: ${learned} of ${pool} (${pct}%)</div><div class="prog gmxp" title="Items you've gotten right 3 times in a row count as learned"><i style="width:${pct}%"></i></div></div>
     <dl class="props gmprops"><dt>Lesson streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}</dd><dt>Length</dt><dd>${({short:"Short",medium:"Medium",long:"Long"})[L.len]} (${n} questions)</dd></dl>
     <div class="note">Items you miss come back sooner. Ones you know well show up less often.</div>
-    <div class="actions">${done?`<button class="btn default" type="button" id="glstart" data-practice="1">Practice more</button>`:`<button class="btn default" type="button" id="glstart">Start lesson &gt;</button>`}<button class="btn" type="button" id="glchange">Change subject...</button><span class="spacer"></span><button class="btn" type="button" data-glclose>${done?"Close":"Not now"}</button></div>`,`Daily Lesson - ${gmNiceDate(gmToday())}`);
+    <div class="actions">${done?`<button class="btn default" type="button" id="glstart" data-practice="1">Practice more</button>`:`<button class="btn default" type="button" id="glstart">Start lesson &gt;</button>`}<button class="btn" type="button" data-gledit="${L.id}">Change subject...</button>${ls.length>1?`<button class="btn" type="button" id="glback">&lt; All lessons</button>`:`<button class="btn" type="button" id="gladd">+ Add a subject</button>`}<span class="spacer"></span><button class="btn" type="button" data-glclose>${done?"Close":"Not now"}</button></div>`,`Daily Lesson - ${gmNiceDate(gmToday())}`);
   const f=box.querySelector("#glstart");if(f)f.focus({preventScroll:true});
 }
-function gmLesSetup(box){
-  const L=gmLes()||{topic:"phrases",lang:"el",len:"medium",popup:true};GM.lpick=GM.lpick||{topic:L.topic,lang:L.lang||"el",len:L.len,popup:L.popup!==false};const pk=GM.lpick;
-  box.innerHTML=gmLesFrame(`<div>Pick one subject to practice every day, like a language app. You can change it anytime.</div>
-    <div class="group"><span class="legend">Subject</span><div class="gmlsub">${GM_TOPICS.map(t=>`<button type="button" class="btn" data-glsub="${t.k}" aria-pressed="${pk.topic===t.k}">${t.emo} ${esc(t.k==="phrases"?"Language":t.label)}</button>`).join("")}</div>
-      <div class="row" ${pk.topic==="phrases"?"":"hidden"} style="align-items:center;margin-top:6px"><label for="gllang">Language:</label><select class="sel95" id="gllang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${pk.lang===k?" selected":""}>${esc(v.name)}</option>`).join("")}</select></div></div>
-    <div class="group"><span class="legend">Lesson length</span><div class="actions">${Object.entries({short:"Short",medium:"Medium",long:"Long"}).map(([k,v])=>`<button type="button" class="btn" data-gllen="${k}" aria-pressed="${pk.len===k}">${v} &middot; ${GM_LEN[k]}</button>`).join("")}</div><div class="note">Questions per day.</div></div>
-    <label class="cb"><input type="checkbox" id="glpop"${pk.popup?" checked":""}> Remind me with a pop-up when I haven't done today's lesson</label>
-    <div class="actions"><span class="spacer"></span>${gmLes()?`<button class="btn" type="button" id="glcancel">Cancel</button>`:`<button class="btn" type="button" data-glclose>Not now</button>`}<button class="btn default" type="button" id="glsave">Save &amp; start &gt;</button></div>`,"Set up your Daily Lesson");
+function gmLesList(box){
+  const ls=gmLessons(),done=ls.filter(L=>gmLesDone(L.id)).length,str=gmLesStreak(),nx=gmLesPending()[0];
+  const rows=ls.map(L=>{const d=gmLesDone(L.id),learned=gmLearned(L.topic,L.lang),pool=gmPoolSize(L.topic,L.lang),pct=pool?Math.round(learned/pool*100):0,name=esc(gmLesName(L.topic,L.lang));
+    return `<div class="gmlrow${d?" done":""}"><span class="gmlemo" aria-hidden="true">${gmLesEmo(L.topic)}</span><div class="gmlmid"><b>${d?"✓ ":""}${name}</b><div class="note">${d?`Done today: ${d.right} of ${d.total} right`:`${GM_LEN[L.len]||10} questions`} &middot; ${pct}% learned</div></div><button class="btn${nx&&nx.id===L.id?" default":""}" type="button" data-glpick="${L.id}">${d?"Review":"Start &gt;"}</button><button class="btn" type="button" data-gledit="${L.id}" aria-label="Edit ${name}" title="Edit">Edit</button></div>`}).join("");
+  box.innerHTML=gmLesFrame(`<div class="gmqhead"><span><b>${done} of ${ls.length}</b> done today</span><span>${GM_FIRE} ${str} day${str===1?"":"s"}</span></div><div class="prog gmxp"><i style="width:${Math.round(done/ls.length*100)}%"></i></div>
+    <div class="gmlist">${rows}</div>
+    <div class="note">Your lesson streak counts any day you finish at least one lesson. Items you miss come back sooner.</div>
+    <div class="actions"><button class="btn" type="button" id="gladd">+ Add a subject...</button><span class="spacer"></span><button class="btn" type="button" data-glclose>${done===ls.length?"Close":"Not now"}</button></div>`,`Daily Lessons - ${gmNiceDate(gmToday())}`);
+  const f=box.querySelector(".gmlist .btn.default")||box.querySelector(".dlg-body > .actions [data-glclose]");if(f)f.focus({preventScroll:true});
 }
-function gmLesSave(){const pk=GM.lpick,old=gmLes();GM.set.lesson={topic:pk.topic,lang:pk.lang,len:pk.len,popup:pk.popup};gmSave();
-  if(old&&(old.topic!==pk.topic||old.lang!==pk.lang||old.len!==pk.len)&&GM.lrun){GM.lrun=null;store.set("gm.lrun",null)}GM.lsetup=false;GM.lpick=null;buildStart()}
-function gmLesStart(practice){const L=gmLes(),n=GM_LEN[L.len]||10,seed=gmToday()+(practice?"|P"+Date.now():"|L");
-  const qs=gmQuestions(L.topic,seed,{n,lang:L.lang,order:gmLesOrder(L.topic,L.lang,seed)});
-  GM.lrun={date:gmToday(),practice:!!practice,seed,topic:L.topic,lang:L.lang,n:qs.length,keys:qs.map(q=>q.key),extra:[],ans:[],pend:null};store.set("gm.lrun",GM.lrun);gmLQ=null;gmRenderLesson()}
+function gmLesSetup(box){
+  const ls=gmLessons(),ed=ls.find(L=>L.id===GM.ledit)||null,others=ls.filter(L=>L!==ed);
+  const same=(L,p)=>L.topic===p.topic&&(p.topic!=="phrases"||L.lang===p.lang);
+  if(!GM.lpick){const base=ed||{topic:others.some(L=>L.topic==="phrases")?(GM_TOPICS.find(t=>!others.some(L=>L.topic===t.k))||GM_TOPICS[0]).k:"phrases",lang:"el",len:"medium",popup:true};
+    GM.lpick={topic:base.topic,lang:base.lang||"el",len:base.len,popup:base.popup!==false}}
+  const pk=GM.lpick,dup=others.some(L=>same(L,pk));
+  const intro=ed?"Change this lesson's subject or length.":ls.length?"Add another subject. Each one gets its own questions every day.":"Pick a subject to practice every day, like a language app. You can add more subjects later.";
+  box.innerHTML=gmLesFrame(`<div>${intro}</div>
+    <div class="group"><span class="legend">Subject</span><div class="gmlsub">${GM_TOPICS.map(t=>`<button type="button" class="btn" data-glsub="${t.k}" aria-pressed="${pk.topic===t.k}">${t.emo} ${esc(t.k==="phrases"?"Language":t.label)}${t.k!=="phrases"&&others.some(L=>L.topic===t.k)?' <span class="sub">(added)</span>':""}</button>`).join("")}</div>
+      <div class="row" ${pk.topic==="phrases"?"":"hidden"} style="align-items:center;margin-top:6px"><label for="gllang">Language:</label><select class="sel95" id="gllang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${pk.lang===k?" selected":""}>${esc(v.name)}${others.some(L=>L.topic==="phrases"&&L.lang===k)?" (added)":""}</option>`).join("")}</select></div></div>
+    <div class="group"><span class="legend">Lesson length</span><div class="actions">${Object.entries({short:"Short",medium:"Medium",long:"Long"}).map(([k,v])=>`<button type="button" class="btn" data-gllen="${k}" aria-pressed="${pk.len===k}">${v} &middot; ${GM_LEN[k]}</button>`).join("")}</div><div class="note">Questions per day.</div></div>
+    <label class="cb"><input type="checkbox" id="glpop"${pk.popup?" checked":""}> Remind me with a pop-up when I haven't done this lesson today</label>
+    ${dup?`<div class="fb no">You already have a ${esc(gmLesName(pk.topic,pk.lang))} lesson.</div>`:""}
+    <div class="actions">${ed?`<button class="btn" type="button" id="glremove">${GM.lrmArm?"Click again to remove":"Remove lesson"}</button>`:""}<span class="spacer"></span>${ls.length?`<button class="btn" type="button" id="glcancel">Cancel</button>`:`<button class="btn" type="button" data-glclose>Not now</button>`}<button class="btn default" type="button" id="glsave"${dup?" disabled":""}>${ed?"Save":"Save &amp; start &gt;"}</button></div>`,ed?"Edit lesson":ls.length?"Add a subject":"Set up your Daily Lesson");
+}
+function gmLesSave(){const pk=GM.lpick,ls=gmLessons(),ed=ls.find(L=>L.id===GM.ledit);let id;
+  if(ed){id=ed.id;const changed=ed.topic!==pk.topic||ed.lang!==pk.lang||ed.len!==pk.len;Object.assign(ed,{topic:pk.topic,lang:pk.lang,len:pk.len,popup:pk.popup});
+    if(changed&&GM.lrun&&GM.lrun.lid===id){GM.lrun=null;store.set("gm.lrun",null)}}
+  else{id="l"+Date.now().toString(36);ls.push({id,topic:pk.topic,lang:pk.lang,len:pk.len,popup:pk.popup});GM.set.lessons=ls}
+  gmSave();GM.lsetup=false;GM.ledit=null;GM.lpick=null;GM.lcur=id;buildStart();return !ed}
+function gmLesRemove(){const id=GM.ledit;GM.set.lessons=gmLessons().filter(L=>L.id!==id);if(GM.lrun&&GM.lrun.lid===id){GM.lrun=null;store.set("gm.lrun",null)}
+  gmSave();GM.lrmArm=false;GM.lsetup=false;GM.ledit=null;GM.lpick=null;GM.lcur=null;buildStart();if(gmScoresOpen())gmRenderScores();
+  if(!gmLessons().length){gmCloseLesson(true);gmToast("Lesson removed.");return}gmRenderLesson()}
+function gmLesStart(practice){const L=gmLes(),n=GM_LEN[L.len]||10,seed=gmToday()+(practice?"|P"+Date.now():"|L"+L.id);
+  const qs=gmQuestions(L.topic,seed,{n,lang:L.lang,order:gmLesOrder(L.topic,L.lang,seed)});GM.lcur=L.id;
+  GM.lrun={date:gmToday(),practice:!!practice,seed,lid:L.id,topic:L.topic,lang:L.lang,n:qs.length,keys:qs.map(q=>q.key),extra:[],ans:[],pend:null};store.set("gm.lrun",GM.lrun);gmLQ=null;gmRenderLesson()}
 let gmLQ=null;
 function gmLesQuestion(i){const r=GM.lrun;
   if(!gmLQ||gmLQ.k!==r.seed){gmLQ={k:r.seed,qs:gmQuestions(r.topic,r.seed,{keys:r.keys,lang:r.lang}),ex:{}}}
@@ -2830,32 +2909,39 @@ function gmLesAnswer(j){const r=GM.lrun,i=r.ans.length,q=gmLesQuestion(i);if(!q|
   if(ok&&q.say)try{speakLang(q.say.text,q.say.lang)}catch(e){}
 }
 function gmLesFinish(){const r=GM.lrun,t=gmToday(),right=r.ans.filter(a=>a.ok).length,total=r.ans.length;let bonus=0;
-  if(!r.practice&&!GM.st.lessons[t]){GM.st.lessons[t]={t:r.topic,l:r.topic==="phrases"?r.lang:null,right,total,n:r.n};bonus=30;gmAddXP(bonus)}
+  if(!r.practice&&r.lid&&!gmLesDone(r.lid)){(GM.st.ldone[t]||(GM.st.ldone[t]={}))[r.lid]={right,total,n:r.n};
+    if(!GM.st.lessons[t])GM.st.lessons[t]={t:r.topic,l:r.topic==="phrases"?r.lang:null,right,total,n:r.n};bonus=30;gmAddXP(bonus)}
   GM.lrun=null;store.set("gm.lrun",null);gmSave();gmCheckBadges();gmSyncSoon(true);buildStart();
-  const str=gmLesStreak(),learned=gmLearned(r.topic,r.lang),pool=gmPoolSize(r.topic,r.lang),firstRight=r.ans.slice(0,r.n).filter(a=>a.ok).length;
+  const str=gmLesStreak(),learned=gmLearned(r.topic,r.lang),pool=gmPoolSize(r.topic,r.lang),firstRight=r.ans.slice(0,r.n).filter(a=>a.ok).length,nx=gmLesPending()[0],ls=gmLessons();
   GM.share.lesson=`Atlas95 Daily Lesson · ${gmNiceDate(t)}\n${gmLesEmo(r.topic)} ${gmLesName(r.topic,r.lang)}: ${firstRight}/${r.n} on the first try${str>1?`\n🔥 ${str}-day lesson streak`:""}`;
+  const next=nx&&!r.practice?`<button class="btn default" type="button" data-glgo="${nx.id}">Next: ${gmLesEmo(nx.topic)} ${esc(gmLesName(nx.topic,nx.lang))} &gt;</button>`:"";
   gmLesBox().innerHTML=gmLesFrame(`<div class="score"><span class="gmbigemo" aria-hidden="true">${gmLesEmo(r.topic)}</span><div><span class="big">${firstRight}/${r.n}</span><br>on the first try${r.extra.length?`, plus ${r.extra.length} redo${r.extra.length===1?"":"s"}`:""}<br><b>${r.practice?"Practice round done.":"Lesson complete!"}</b></div></div>
-    <dl class="props gmprops"><dt>Lesson streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}</dd><dt>Learned</dt><dd>${learned} of ${pool} ${esc(r.topic==="phrases"?"phrases":"items")}</dd>${bonus?`<dt>Bonus</dt><dd>+${bonus} XP</dd>`:""}</dl>
+    <dl class="props gmprops"><dt>Lesson streak</dt><dd>${GM_FIRE} ${str} day${str===1?"":"s"}</dd><dt>Learned</dt><dd>${learned} of ${pool} ${esc(r.topic==="phrases"?"phrases":"items")}</dd>${bonus?`<dt>Bonus</dt><dd>+${bonus} XP</dd>`:""}${ls.length>1?`<dt>Today</dt><dd>${ls.filter(L=>gmLesDone(L.id)).length} of ${ls.length} lessons done</dd>`:""}</dl>
     ${r.practice?"":gmMiniBoard("lesson")}
-    <div class="actions"><button class="btn" type="button" data-gmshare="lesson">Share...</button><button class="btn" type="button" id="glstart" data-practice="1">Practice more</button><span class="spacer"></span><button class="btn default" type="button" data-glclose>Done</button></div>`,"Daily Lesson complete");
+    <div class="actions"><button class="btn" type="button" data-gmshare="lesson">Share...</button><button class="btn" type="button" id="glstart" data-practice="1">Practice more</button>${ls.length>1&&!next?`<button class="btn" type="button" id="glback">All lessons</button>`:""}<span class="spacer"></span>${next}<button class="btn${next?"":" default"}" type="button" data-glclose>Done</button></div>`,"Daily Lesson complete");
   gmDoneFocus(gmLesBox());
 }
 document.addEventListener("click",e=>{
-  const b=e.target.closest("[data-glclose],[data-glsub],[data-gllen],[data-glc],[data-glplay],[data-glsay],#glstart,#glchange,#glsave,#glcancel,#glnext,#glpop");if(!b)return;
+  const b=e.target.closest("[data-glclose],[data-glsub],[data-gllen],[data-glc],[data-glplay],[data-glsay],[data-glpick],[data-gledit],[data-glgo],#glstart,#glsave,#glcancel,#glnext,#glpop,#gladd,#glback,#glremove");if(!b)return;
   if(b.hasAttribute("data-glclose")){gmCloseLesson();return}
   if(b.dataset.glsub){GM.lpick.topic=b.dataset.glsub;gmLesSetup(gmLesBox());return}
   if(b.dataset.gllen){GM.lpick.len=b.dataset.gllen;gmLesSetup(gmLesBox());return}
+  if(b.dataset.glpick){GM.lcur=b.dataset.glpick;if(!gmLesDone(GM.lcur)&&!(GM.lrun&&GM.lrun.lid===GM.lcur))gmLesStart(false);else gmRenderLesson();return}
+  if(b.dataset.glgo){GM.lcur=b.dataset.glgo;gmLesStart(false);return}
+  if(b.dataset.gledit){GM.lsetup=true;GM.ledit=b.dataset.gledit;GM.lpick=null;GM.lrmArm=false;gmRenderLesson();return}
+  if(b.id==="gladd"){GM.lsetup=true;GM.ledit=null;GM.lpick=null;gmRenderLesson();return}
+  if(b.id==="glback"){GM.lcur=null;gmRenderLesson();return}
   if(b.id==="glpop"){GM.lpick.popup=b.checked;return}
-  if(b.id==="glsave"){gmLesSave();gmLesStart(false);return}
-  if(b.id==="glcancel"){GM.lsetup=false;GM.lpick=null;gmRenderLesson();return}
-  if(b.id==="glchange"){GM.lsetup=true;GM.lpick=null;gmRenderLesson();return}
-  if(b.id==="glstart"){gmLesStart(!!b.dataset.practice||!!GM.st.lessons[gmToday()]);return}
+  if(b.id==="glsave"){if(b.disabled)return;if(gmLesSave()||!gmLesDone(GM.lcur))gmLesStart(false);else gmRenderLesson();return}
+  if(b.id==="glremove"){if(!GM.lrmArm){GM.lrmArm=true;gmLesSetup(gmLesBox());return}gmLesRemove();return}
+  if(b.id==="glcancel"){GM.lsetup=false;GM.ledit=null;GM.lpick=null;GM.lrmArm=false;gmRenderLesson();return}
+  if(b.id==="glstart"){gmLesStart(!!b.dataset.practice||!!gmLesDone(gmLes().id));return}
   if(b.dataset.glc!=null){if(!b.disabled)gmLesAnswer(+b.dataset.glc);return}
   if(b.id==="glnext"){GM.lrun.pend=null;store.set("gm.lrun",GM.lrun);gmLesQ(gmLesBox());return}
   if(b.dataset.glplay){try{strum(CHORDS.find(c=>c.id===b.dataset.glplay))}catch(err){}return}
   if(b.hasAttribute("data-glsay")){const r=GM.lrun,q=gmLesQuestion(r.pend!=null?r.pend:r.ans.length);if(q&&q.say)speakLang(q.say.text,q.say.lang);return}
 });
-document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.lpick.lang=e.target.value}});
+document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.lpick.lang=e.target.value;gmLesSetup(gmLesBox())}});
 
 // ---------- shared leaderboard (db) ----------
 let gmDB=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
@@ -2957,10 +3043,11 @@ function gmMeHTML(){
     <div class="prog gmxp" title="${st.xp-lo} of ${hi-lo} XP to level ${L+1}"><i style="width:${pct}%"></i></div><div class="note">${(hi-st.xp).toLocaleString("en-US")} XP to level ${L+1} &middot; ${st.xp.toLocaleString("en-US")} XP total</div></div>
     <div class="gmstreak">${GM_FIRE}<b>${str}</b><small>day streak</small></div></div>
     ${GM.seedXP?`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>Welcome to the Scoreboard</b>You got credit for the sections you'd already finished.</div></div>`:""}
-    <div class="actions">${dl?`<span>Today's challenge: <b>${dl.s}/5</b> ${gmMarks(dl.m,5)}</span>`:`<button class="btn default" type="button" data-gm="daily">${STAR16} Play today's challenge</button>`}${(()=>{const L=gmLes(),ld=st.lessons[gmToday()];return !L?`<button class="btn" type="button" data-gm="lesson">${GRAD16} Set up a daily lesson</button>`:ld?`<span>Lesson: <b>${esc(gmLesName(L.topic,L.lang))}</b> done ${GM_FIRE} ${gmLesStreak()}</span>`:`<button class="btn" type="button" data-gm="lesson">${GRAD16} Today's lesson: ${esc(gmLesName(L.topic,L.lang))}</button>`})()}<span class="spacer"></span><button class="btn" type="button" data-gmshare="stats">Share my stats...</button></div>
-    <div class="group"><span class="legend">Totals</span><dl class="props gmprops"><dt>Answers right</dt><dd>${st.answers.toLocaleString("en-US")}</dd><dt>Right on the first try</dt><dd>${acc}</dd><dt>Sections finished</dt><dd>${st.sections}</dd><dt>Perfect sections</dt><dd>${st.perfects}</dd><dt>Daily challenges</dt><dd>${ds.length} played &middot; ${avg} avg</dd><dt>Best streak</dt><dd>${st.bestStreak} day${st.bestStreak===1?"":"s"}</dd><dt>Daily lessons</dt><dd>${Object.keys(st.lessons).length} done &middot; ${GM_FIRE} ${gmLesStreak()} day streak</dd></dl></div>
+    <div class="actions">${dl?`<span>Today's challenge: <b>${dl.s}/5</b> ${gmMarks(dl.m,5)}</span>`:`<button class="btn default" type="button" data-gm="daily">${STAR16} Play today's challenge</button>`}${(()=>{const ls=gmLessons(),left=gmLesPending().length;return !ls.length?`<button class="btn" type="button" data-gm="lesson">${GRAD16} Set up a daily lesson</button>`:!left?`<span>Lesson${ls.length>1?"s":""}: <b>${ls.length>1?"all done":esc(gmLesName(ls[0].topic,ls[0].lang))+" done"}</b> ${GM_FIRE} ${gmLesStreak()}</span>`:`<button class="btn" type="button" data-gm="lesson">${GRAD16} Today's lesson${ls.length>1?"s":""}: ${esc(gmLesSum())}</button>`})()}<span class="spacer"></span><button class="btn" type="button" data-gmshare="stats">Share my stats...</button></div>
+    <div class="group"><span class="legend">Totals</span><dl class="props gmprops"><dt>Answers right</dt><dd>${st.answers.toLocaleString("en-US")}</dd><dt>Right on the first try</dt><dd>${acc}</dd><dt>Sections finished</dt><dd>${st.sections}</dd><dt>Perfect sections</dt><dd>${st.perfects}</dd><dt>Daily challenges</dt><dd>${ds.length} played &middot; ${avg} avg</dd><dt>Best streak</dt><dd>${st.bestStreak} day${st.bestStreak===1?"":"s"}</dd><dt>Daily lessons</dt><dd>${Object.keys(st.lessons).length} day${Object.keys(st.lessons).length===1?"":"s"} &middot; ${GM_FIRE} ${gmLesStreak()} day streak</dd></dl></div>
     <div class="group"><span class="legend">Last 14 days</span><div class="gmcal">${cal}</div></div>
     <div class="group"><span class="legend">By program</span><table class="gmtable"><thead><tr><th>Program</th><th>Right</th><th>First try</th><th>Sections</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${vScoreRows()}
     <div class="group"><span class="legend">Best times</span>${times?`<table class="gmtable"><thead><tr><th>Program</th><th>Section</th><th>Time</th></tr></thead><tbody>${times}</tbody></table>`:`<div class="note">Finish a section from the start to record a time. Turn on <a href="#" class="link" data-gmsettimer>Timer mode</a> to see the clock while you play.</div>`}</div>`;
 }
 function gmLbHTML(){
@@ -2995,7 +3082,7 @@ function gmSettingsHTML(){
     <div class="group"><span class="legend">Daily challenge</span><label class="cb"><input type="checkbox" data-gmset="popup"${GM.set.popup?" checked":""}> Pop up the daily challenge when I haven't played today</label><label class="cb"><input type="checkbox" data-gmset="tpopup"${GM.set.tpopup!==false?" checked":""}> Pop up the daily trivia (9 tiles) too</label>
       <div style="margin-top:4px">Topics that can come up on the wheel:</div><div class="gmtopics">${GM_TOPICS.map(t=>`<label class="cb"><input type="checkbox" data-gmtopic="${t.k}"${en.includes(t.k)?" checked":""}> ${t.emo} ${esc(t.label)}</label>`).join("")}</div>
       <div class="actions"><button class="btn" type="button" data-gmtopics="all">Select all</button><span class="note" id="gmtnote"></span></div></div>
-    <div class="group"><span class="legend">Daily lesson</span><div>${gmLes()?`Subject: <b>${esc(gmLesName(gmLes().topic,gmLes().lang))}</b> &middot; ${GM_LEN[gmLes().len]} questions a day`:"Not set up yet."}</div><div class="actions"><button class="btn" type="button" data-gmlesset>${gmLes()?"Change...":"Set up..."}</button></div></div>
+    <div class="group"><span class="legend">Daily lessons</span>${gmLessons().length?`<div class="gmlist">${gmLessons().map(L=>`<div class="gmlrow"><span class="gmlemo" aria-hidden="true">${gmLesEmo(L.topic)}</span><div class="gmlmid"><b>${esc(gmLesName(L.topic,L.lang))}</b><div class="note">${GM_LEN[L.len]||10} questions a day${L.popup===false?"":" &middot; pop-up reminder"}</div></div><button class="btn" type="button" data-gmlesset="${L.id}">Edit...</button></div>`).join("")}</div>`:"<div>Not set up yet.</div>"}<div class="actions"><button class="btn" type="button" data-gmlesset="new">${gmLessons().length?"+ Add a subject...":"Set up..."}</button></div></div>
     <div class="group"><span class="legend">Leaderboard name</span><form class="row" id="gmnickf" autocomplete="off"><input class="gmin" id="gmnick" type="text" maxlength="24" placeholder="Your name or nickname" value="${esc(GM.set.nick||"")}" aria-label="Leaderboard name"><button class="btn default" type="submit">Save</button></form><div class="note">${GM_SB?"This is the name other players see. Don't use your full name.":"Leave it blank to use your Claude name."}</div></div>
     ${GM_SB&&gmDB&&gmDB.remove?`<div class="group"><span class="legend">Leaderboard entry</span><div class="actions"><button class="btn" type="button" id="gmunlist">Remove me from the leaderboard</button></div><div class="note">Deletes your name and scores from the shared board. Playing again later adds you back.</div></div>`:""}
     ${window.ATLAS95_PRIVACY_URL?`<div class="note"><a class="link" href="${esc(window.ATLAS95_PRIVACY_URL)}" target="_blank" rel="noopener">Privacy policy</a></div>`:""}
@@ -3003,6 +3090,7 @@ function gmSettingsHTML(){
 }
 function gmMenu(k){
   GM.popq=[];
+  if(k==="word"){showApp("vault");vOpen("word");return}
   if(k==="daily"){if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);gmOpenDaily();return}
   if(k==="lesson"){if(gmDailyOpen())gmCloseDaily(true);if(gmTrivOpen())gmCloseTrivia(true);gmOpenLesson();return}
   if(k==="trivia"){if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);gmOpenTrivia();return}
@@ -3011,8 +3099,8 @@ function gmMenu(k){
   if(gmDailyOpen())gmCloseDaily();
   const tab=k==="settings"?"settings":k==="lb"?"lb":k==="badges"?"badges":"me";GM.tab=tab;showApp("scores");
 }
-function gmStartItems(){const done=!!GM.st.dailies[gmToday()],L=gmLes(),ld=GM.st.lessons&&GM.st.lessons[gmToday()];
-  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="trivia">${TV16}Daily Trivia <span class="sub">${GM.st.trivia&&GM.st.trivia[gmToday()]?"(done today)":"(9 tiles)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson <span class="sub">${!L?"(set up)":ld?"(done today)":"("+esc(gmLesName(L.topic,L.lang))+")"}</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
+function gmStartItems(){const done=!!GM.st.dailies[gmToday()];
+  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="trivia">${TV16}Daily Trivia <span class="sub">${GM.st.trivia&&GM.st.trivia[gmToday()]?"(done today)":"(9 tiles)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson${gmLessons().length>1?"s":""} <span class="sub">(${esc(gmLesSum())})</span></button></li><li><button type="button" class="prog-item" data-gm="word">${WORD16}Daily Word <span class="sub">(${esc((GV.st.word&&(GV.st.word.days||{})[gmToday()])?"done today":"new word")})</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
 function gmStartScores(){return [["me","My stats"],["lb","Leaderboard"],["badges","Badges"]].map(([k,l])=>`<li><button type="button" data-gm="${k}">${l}</button></li>`).join("")}
 
 // ---------- events ----------
@@ -3031,7 +3119,7 @@ document.addEventListener("click",e=>{
   if(b.hasAttribute("data-gmsay")){const q=gmQs()[GM.run.pend!=null?GM.run.pend:GM.run.ans.length];if(q&&q.say)speakLang(q.say.text,q.say.lang);return}
   if(b.hasAttribute("data-gmsettimer")){gmSetTimer(true);return}
   if(b.dataset.gmtopics){GM.set.topics=null;gmSave();gmRenderScores();return}
-  if(b.hasAttribute("data-gmlesset")){gmOpenLesson(true);return}
+  if(b.hasAttribute("data-gmlesset")){gmOpenLesson(b.dataset.gmlesset||"new");return}
   if(b.id==="gmunlist"){gmCanWrite=false;gmDB.remove().then(()=>{b.textContent="Removed";gmToast("You're off the leaderboard. Your stats on this device are still here.")},()=>{b.textContent="Couldn't remove. Try again later.";gmCanWrite=true});return}
   if(b.id==="gmspin"){gmSpin();return}
   if(b.id==="gmstart"){gmRenderDaily();return}
@@ -3061,7 +3149,7 @@ function gmInit(){
   const L=gmLes(),t=gmToday();GM.popq=[];
   if(GM.set.popup&&!GM.st.dailies[t])GM.popq.push("daily");
   if(GM.set.tpopup!==false&&!(GM.st.trivia&&GM.st.trivia[t]))GM.popq.push("trivia");
-  if(L&&L.popup!==false&&!GM.st.lessons[t])GM.popq.push("lesson");
+  if(gmLesPending(true).length)GM.popq.push("lesson");
   if(GM.popq.length)setTimeout(()=>{if(!gmDailyOpen()&&!gmLesOpen()&&!gmTrivOpen())gmNextPopup()},700);
 }
 
@@ -3182,11 +3270,101 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
   if(b.hasAttribute("data-gtback")){GM.trun.open=null;store.set("gm.trun",GM.trun);gmRenderTrivia();return}
 });
 
+// ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
+// A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
+const VG_VER="1";
+window.A95G=window.A95G||{};
+const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
+const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
+const VGAMES=[
+  {id:"word",name:"Daily Word",blurb:"Guess the 5-letter word in 6 tries. A new word every day.",icon:WORD16,
+    line:s=>{const d=(s.days||{})[gmToday()];return d?(d.won?`Today: solved in ${d.n}/6`:"Today: missed it")+(s.streak>1?` · 🔥 ${s.streak}`:""):"Today's word is waiting"}},
+  {id:"snake",name:"Snake",blurb:"Eat the apples, grow longer, don't bite your tail.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#000"/><path d="M2.5 13.5h5v-5h-4v-5h8v6" fill="none" stroke="#00c000" stroke-width="2.2" stroke-linejoin="round"/><rect x="10.3" y="11" width="2.4" height="2.4" fill="#ff3030"/></svg>'},
+  {id:"circle",name:"Perfect Circle",blurb:"Draw a circle freehand. How close to perfect can you get?",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M8 2.6c3.2-.1 5.4 2.3 5.3 5.4-.1 3-2.5 5.3-5.4 5.3S2.6 11 2.7 7.9C2.8 5.3 4.6 3 7.6 2.9" fill="none" stroke="#000080" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r=".9" fill="#c00000"/></svg>',
+    line:s=>s.best!=null?`Best: ${s.best.toFixed(1)}%`:"Not played yet"},
+  {id:"memory",name:"Memory Match",blurb:"Flip cards two at a time and find every pair. Shapes, flags or elements.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="2.5" width="7" height="10" fill="#000080" stroke="#000"/><path d="M2.5 4l4 7M6.5 4l-4 7" stroke="#1084d0"/><rect x="8" y="3.5" width="7" height="10" fill="#fff" stroke="#000"/><path d="M11.5 5.6l.9 1.9 2 .2-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.2z" fill="#ffd800" stroke="#000" stroke-width=".6" stroke-linejoin="round"/></svg>'},
+  {id:"connect4",name:"Connect Four",blurb:"Drop discs and line up four in a row before the computer does.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="2.5" width="15" height="12" fill="#1040c0" stroke="#000"/><g stroke="#000" stroke-width=".6"><circle cx="3.5" cy="5.5" r="1.6" fill="#fff"/><circle cx="8" cy="5.5" r="1.6" fill="#fff"/><circle cx="12.5" cy="5.5" r="1.6" fill="#ffd800"/><circle cx="3.5" cy="11" r="1.6" fill="#e00000"/><circle cx="8" cy="11" r="1.6" fill="#ffd800"/><circle cx="12.5" cy="11" r="1.6" fill="#e00000"/></g></svg>',
+    line:s=>s.w||s.l||s.d?`Won ${s.w||0} · Lost ${s.l||0}${s.d?` · Drew ${s.d}`:""}`:"Not played yet"}];
+const VG_XPCAP=100;
+var GV={st:store.get("gv.st")||{},set:Object.assign({mute:false},store.get("gv.set")||{}),xpd:store.get("gv.xpd")||{d:"",n:0},cur:null,inst:null,loading:{}};
+const vSt=k=>GV.st[k]||(GV.st[k]={});
+const vSave=()=>{store.set("gv.st",GV.st);store.set("gv.set",GV.set);store.set("gv.xpd",GV.xpd)};
+const vPlays=()=>Object.values(GV.st).reduce((a,s)=>a+(s.plays||0),0);
+const vXPToday=()=>GV.xpd.d===gmToday()?GV.xpd.n:0;
+function vXP(n){const room=Math.max(0,VG_XPCAP-vXPToday()),add=Math.min(Math.round(n),room);if(add<=0)return 0;GV.xpd={d:gmToday(),n:vXPToday()+add};gmAddXP(add);gmSave();return add}
+const vEl=id=>document.getElementById(id);
+const VDLG=vEl("vdialog");
+function vLoad(id){if(A95G[id])return Promise.resolve();if(GV.loading[id])return GV.loading[id];
+  return GV.loading[id]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=`games/${id}.js?v=${VG_VER}`;
+    s.onload=()=>A95G[id]?res():rej(new Error("not registered"));s.onerror=()=>{delete GV.loading[id];s.remove();rej(new Error("load failed"))};document.head.appendChild(s)})}
+function vApi(g){
+  const offs=[],st=vSt(g.id);
+  return {id:g.id,root:vEl("vgroot"),bar:vEl("vgbar"),stats:st,save:vSave,
+    esc,today:gmToday,dayNum:gmDayNum,niceDate:gmNiceDate,hash:gmHash,rng:gmRng,shuffle:gmShuf,reduced,fmtTime:gmFmtT,
+    // true while the game window is on screen and no dialog is covering it
+    active:()=>!APPS.vault.win.hidden&&!document.querySelector(".scrim"),
+    on(t,type,fn,o){t.addEventListener(type,fn,o);offs.push(()=>t.removeEventListener(type,fn,o))},
+    _off(){offs.splice(0).forEach(f=>f())},
+    css(text){const id="vgcss-"+g.id;if(!vEl(id)){const s=document.createElement("style");s.id=id;s.textContent=text;document.head.appendChild(s)}},
+    status(a,b){vEl("vst1").textContent=a||"";vEl("vst2").textContent=b||"";vStatusXP()},
+    sound(k){if(GV.set.mute)return;const S={eat:[[79],0],ding:[[72,76,79],0.07],win:[[72,76,79,84],0.09],lose:[[55,50],0.2],flip:[[84],0],drop:[[60],0],tap:[[67],0]}[k];if(S)try{playMidis(S[0],S[1],"vg-"+k)}catch(e){}},
+    toast:gmToast,
+    share(text,btn){GM.share.vg=text;gmShare("vg",btn)},
+    flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,
+    // a finished game: o={score, higher (default true), text, xp}. Returns {best, first, xp}.
+    result(o){st.plays=(st.plays||0)+1;let best=false,first=false;
+      if(o&&o.score!=null){const lower=o.higher===false,better=st.best==null||(lower?o.score<st.best:o.score>st.best);
+        if(better){first=st.best==null;best=!first;st.best=o.score;st.bestText=o.text||String(o.score)}}
+      const xp=vXP(((o&&o.xp)||0)+(best?10:0));vSave();gmCheckBadges();gmSyncSoon();
+      if(best)gmToast(`<span class="gmtemo">🏆</span><span><b>New best in ${esc(g.name)}!</b><br>${esc(st.bestText)}</span>`);
+      vStatusXP();return {best,first,xp}}};
+}
+function vStatusXP(){const e=vEl("vst3");if(e)e.textContent=`Game XP today: ${vXPToday()}/${VG_XPCAP}`}
+function vUnmount(){const I=GV.inst;GV.inst=null;GV.cur=null;VDLG.innerHTML="";if(!I)return;try{I.h.unmount&&I.h.unmount()}catch(e){}I.api._off()}
+function vRender(){if(GV.cur)return;vHome()}
+function vLine(g){const s=GV.st[g.id]||{};return g.line?g.line(s):s.bestText?`Best: ${s.bestText}`:"Not played yet"}
+function vHome(){vUnmount();
+  vEl("vtitle").textContent="Game Vault";
+  vEl("vbar").innerHTML=`<span class="note">Pick a game. Playing earns XP, up to ${VG_XPCAP} a day.</span><span class="spacer"></span>${vMuteBtn()}`;
+  vEl("vstage").innerHTML=`<div class="vgrid">${VGAMES.map(g=>`<button class="vtile" type="button" data-vg="${g.id}">${g.icon.replace(/width="16" height="16"/,'width="40" height="40"')}<b>${esc(g.name)}</b><span class="vblurb">${esc(g.blurb)}</span><span class="vbest">${esc(vLine(g))}</span></button>`).join("")}</div>`;
+  vEl("vst1").textContent=`${VGAMES.length} games`;vEl("vst2").textContent=`Played: ${vPlays()}`;vStatusXP();
+}
+const vMuteBtn=()=>`<button class="btn" type="button" data-vmute aria-pressed="${!GV.set.mute}">Sound: ${GV.set.mute?"Off":"On"}</button>`;
+async function vOpen(id){const g=VGAMES.find(x=>x.id===id);if(!g)return;
+  if(GV.cur===id&&GV.inst)return;vUnmount();GV.cur=id;
+  vEl("vtitle").textContent=`Game Vault - ${g.name}`;
+  vEl("vbar").innerHTML=`<button class="btn" type="button" data-vhome>&lt; All games</button><span class="sep"></span><span id="vgbar" class="vgbar"></span><span class="spacer"></span><button class="btn" type="button" data-vhelp>How to play</button>${vMuteBtn()}`;
+  vEl("vstage").innerHTML=`<div class="vgame" id="vgroot"><div class="note">Loading ${esc(g.name)}...</div></div>`;
+  vEl("vst1").textContent=g.name;vEl("vst2").textContent="";vStatusXP();
+  try{await vLoad(id)}catch(e){if(GV.cur!==id)return;vEl("vgroot").innerHTML=`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>${esc(g.name)} didn't load</b>Check your connection and try again.</div></div><div class="actions"><button class="btn default" type="button" data-vg="${id}" data-vretry>Try again</button></div>`;GV.cur=null;return}
+  if(GV.cur!==id)return;
+  const api=vApi(g);vEl("vgroot").innerHTML="";GV.inst={g,api,h:{}};
+  try{GV.inst.h=A95G[id].mount(api)||{}}catch(e){vEl("vgroot").innerHTML=`<div class="fb no">Something went wrong starting ${esc(g.name)}.</div>`}
+}
+function vHelp(){const I=GV.inst;if(!I)return;const help=A95G[I.g.id].help||"";
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="vhelpt"><div class="titlebar">${I.g.icon}<span class="t" id="vhelpt">How to play ${esc(I.g.name)}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">${help}<div class="actions"><button class="btn default" type="button" data-vclose>OK</button></div></div></div></div>`;
+  VDLG.querySelector(".btn.default").focus({preventScroll:true})}
+// pause a running game when its window is hidden or the tab goes to the background
+function vOnVis(){const I=GV.inst;if(I&&I.h.pause&&(APPS.vault.win.hidden||document.visibilityState==="hidden"))try{I.h.pause()}catch(e){}}
+document.addEventListener("visibilitychange",vOnVis);
+document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.closest("[data-vg],[data-vhome],[data-vhelp],[data-vmute],[data-vclose]");if(!b)return;
+  if(b.dataset.vg){vOpen(b.dataset.vg);return}
+  if(b.hasAttribute("data-vhome")){vHome();return}
+  if(b.hasAttribute("data-vhelp")){vHelp();return}
+  if(b.hasAttribute("data-vclose")){VDLG.innerHTML="";return}
+  if(b.hasAttribute("data-vmute")){GV.set.mute=!GV.set.mute;vSave();document.querySelectorAll("[data-vmute]").forEach(x=>{x.outerHTML=vMuteBtn()})}});
+function vScoreRows(){const rows=VGAMES.map(g=>{const s=GV.st[g.id]||{};return `<tr><td>${esc(g.name)}</td><td>${s.plays||0}</td><td>${esc(g.line?g.line(s):s.bestText||"--")}</td></tr>`}).join("");
+  return `<div class="group"><span class="legend">Game Vault</span><table class="gmtable"><thead><tr><th>Game</th><th>Played</th><th>Best</th></tr></thead><tbody>${rows}</tbody></table><div class="actions"><button class="btn" type="button" data-open="vault">${JOY16} Open the Game Vault</button></div></div>`}
+
 // ================= Desktop: programs, taskbar, Start menu =================
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
 const GUITAR16=document.querySelector("#gwin .titlebar svg").outerHTML;
 const FLASK16=document.querySelector("#ewin .titlebar svg").outerHTML;
-const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},trivia:{label:"Trivia Board",sub:"Pick a tile, win points",icon:document.querySelector("#twin .titlebar svg").outerHTML,win:document.getElementById("twin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
+const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},vault:{label:"Game Vault",sub:"Snake, Connect Four & more",icon:JOY16,win:document.getElementById("vwin")},trivia:{label:"Trivia Board",sub:"Pick a tile, win points",icon:document.querySelector("#twin .titlebar svg").outerHTML,win:document.getElementById("twin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
 const saved=store.get("ad.apps")||{};
 let activeApp=APPS[saved.active]?saved.active:"atlas";
 Object.keys(APPS).forEach(k=>{APPS[k].open=false;APPS[k].min=false});
@@ -3196,16 +3374,16 @@ function refreshDesktop(){
   Object.entries(APPS).forEach(([k,a])=>{const vis=k===activeApp&&a.open&&!a.min;a.win.hidden=!vis;if(vis)any=true});
   document.getElementById("desk").hidden=any;if(!any)deskLayout();
   document.getElementById("tasks").innerHTML=Object.entries(APPS).filter(([,a])=>a.open).map(([k,a])=>`<button class="btn task" type="button" data-task="${k}" aria-pressed="${k===activeApp&&!a.min}">${a.icon.replace(/width="\d+" height="\d+"/,'width="14" height="14"')}${a.label}</button>`).join("");
-  buildStart();saveApps();
+  buildStart();saveApps();vOnVis();
 }
 function showApp(k){
   APPS[k].open=true;APPS[k].min=false;activeApp=k;refreshDesktop();
   if(k==="atlas"){layout();if(state.view==="quiz"&&state.target&&state.phase==="ask")focusTarget(false)}
-  else if(k==="guitar")gRender();else if(k==="elements")eRender();else if(k==="phrases")pRender();else if(k==="anatomy")aRender();else if(k==="civics")cRender();else if(k==="scores")gmRenderScores();else if(k==="stars")kRender();else if(k==="trivia")tvRender();else wRender();
+  else if(k==="guitar")gRender();else if(k==="elements")eRender();else if(k==="phrases")pRender();else if(k==="anatomy")aRender();else if(k==="civics")cRender();else if(k==="scores")gmRenderScores();else if(k==="stars")kRender();else if(k==="trivia")tvRender();else if(k==="vault")vRender();else wRender();
   window.scrollTo(0,0);
 }
 function minimizeApp(k){APPS[k].min=true;refreshDesktop()}
-function closeApp(k){APPS[k].open=false;APPS[k].min=false;({atlas:dlg,guitar:gDlg,elements:eDlg,phrases:pDlg,anatomy:aDlg,civics:cDlg,words:wDlg,scores:gmSDlg,stars:kDlg,trivia:document.createElement("div")})[k].innerHTML="";
+function closeApp(k){APPS[k].open=false;APPS[k].min=false;({atlas:dlg,guitar:gDlg,elements:eDlg,phrases:pDlg,anatomy:aDlg,civics:cDlg,words:wDlg,scores:gmSDlg,stars:kDlg,vault:VDLG,trivia:document.createElement("div")})[k].innerHTML="";if(k==="vault"){vUnmount();vEl("vstage").innerHTML=""}
   const other=Object.keys(APPS).find(o=>o!==k&&APPS[o].open&&!APPS[o].min);if(other&&activeApp===k){showApp(other);return}refreshDesktop()}
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-min],[data-closeapp],[data-task],[data-open]");if(!t)return;
@@ -3228,7 +3406,7 @@ function deskLayout(){
   // saved spots first (if they still fit on this screen)
   icons.forEach(el=>{const p=deskPos[iconKey(el)];if(p&&p.c<g.cols&&!taken.has(p.c+","+p.r)){place[iconKey(el)]=p;taken.set(p.c+","+p.r,1)}});
   // default: Daily Challenge and Scoreboard sit at the bottom of the first column
-  const R=g.cols-1,defaults={"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"gm-trivia":{c:R,r:2},"scores":{c:R,r:3}};
+  const R=g.cols-1,defaults={"vault":{c:0,r:0},"gm-word":{c:0,r:1},"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"gm-trivia":{c:R,r:2},"scores":{c:R,r:3}};
   icons.forEach(el=>{const k=iconKey(el),d=defaults[k];if(!place[k]&&d&&!taken.has(d.c+","+d.r)){place[k]=d;taken.set(d.c+","+d.r,1)}});
   let i=0;icons.forEach(el=>{const k=iconKey(el);if(place[k])return;let c;do{c=cellOf(i++,g)}while(taken.has(c.c+","+c.r));place[k]=c;taken.set(c.c+","+c.r,1)});
   let maxR=g.rows-1;icons.forEach(el=>{const p=place[iconKey(el)];el.style.left=p.c*CELL_W+"px";el.style.width=Math.min(92,CELL_W-4)+"px";el.style.top=p.r*CELL_H+"px";if(p.r>maxR)maxR=p.r});
@@ -3309,6 +3487,7 @@ function buildStart(){
   else if(activeApp==="scores"){h+=gmStartScores()}
   else if(activeApp==="trivia"){h+=`<li><button type="button" data-gm="trivia">Daily Trivia (9 tiles)</button></li><li><button type="button" data-tvnewm>New Trivia Board</button></li>`}
   else if(activeApp==="stars"){h+=KGROUPS.map(g=>`<li><button type="button" data-kgm="${esc(g)}">${esc(g)}</button></li>`).join("")+`<li><button type="button" data-kgm="Mix">Mix sections...</button></li><li><hr></li>`+Object.entries(KMODES).map(([k,v])=>`<li><button type="button" data-kmm="${k}">Quiz: ${v}</button></li>`).join("")+`<li><button type="button" data-kvm="study">Study mode</button></li>`}
+  else if(activeApp==="vault"){h+=VGAMES.map(g=>`<li><button type="button" class="prog-item" data-vgm="${g.id}">${g.icon}${esc(g.name)}</button></li>`).join("")}
   else if(activeApp==="atlas"){
     h+=REGIONS.map(c=>`<li><button type="button" data-k="${c.k}">${c.k}</button></li>`).join("")+`<li><button type="button" data-k="Mix">Mix continents...</button></li>`
       +`<li><hr></li>`+Object.entries(SUBJ).map(([k,v])=>`<li><button type="button" data-s="${k}">Quiz: ${v.label}</button></li>`).join("")+`<li><button type="button" data-v="study">Study mode</button></li>`;
@@ -3344,6 +3523,7 @@ sm.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   setMenu(false);
   if(b.hasAttribute("data-a2hs")){a2Show();return}
   if(b.dataset.app){showApp(b.dataset.app);return}
+  if(b.dataset.vgm){showApp("vault");vOpen(b.dataset.vgm);return}
   if(b.dataset.gm){gmMenu(b.dataset.gm);return}
   if(b.hasAttribute("data-tvnewm")){showApp("trivia");tvNew();return}
   if(b.dataset.kgm){showApp("stars");kSetGroup(b.dataset.kgm);return}
@@ -3372,7 +3552,7 @@ sm.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.evm){showApp("elements");eSetView("study");return}
   if(b.dataset.k)switchCont(b.dataset.k);else if(b.dataset.s)setSubj(b.dataset.s);else if(b.dataset.v)setView(b.dataset.v)});
 document.addEventListener("click",e=>{if(!sm.hidden&&!sm.contains(e.target)&&!sb.contains(e.target))setMenu(false)});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){setMenu(false);if(dlg.innerHTML)dlg.innerHTML="";if(gDlg.innerHTML)gDlg.innerHTML="";if(eDlg.innerHTML)eDlg.innerHTML="";if(pDlg.innerHTML)pDlg.innerHTML="";if(aDlg.innerHTML)aDlg.innerHTML="";if(cDlg.innerHTML)cDlg.innerHTML="";if(wDlg.innerHTML)wDlg.innerHTML="";if(gmSDlg.innerHTML)gmSDlg.innerHTML="";if(kDlg.innerHTML)kDlg.innerHTML="";gmEscape()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){setMenu(false);if(dlg.innerHTML)dlg.innerHTML="";if(gDlg.innerHTML)gDlg.innerHTML="";if(eDlg.innerHTML)eDlg.innerHTML="";if(pDlg.innerHTML)pDlg.innerHTML="";if(aDlg.innerHTML)aDlg.innerHTML="";if(cDlg.innerHTML)cDlg.innerHTML="";if(wDlg.innerHTML)wDlg.innerHTML="";if(gmSDlg.innerHTML)gmSDlg.innerHTML="";if(kDlg.innerHTML)kDlg.innerHTML="";if(VDLG.innerHTML)VDLG.innerHTML="";gmEscape()}});
 const tick=()=>{document.getElementById("clock").textContent=new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})};tick();setInterval(tick,15000);
 
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!APPS.atlas.win.hidden&&Math.abs((document.getElementById("plate").clientWidth-4)-W)>20){layout();focusTarget(false)}},200)});
