@@ -364,7 +364,6 @@ a.link:visited{color:#551a8b}
 
 <div class="desk" id="desk" hidden>
   <button class="dicon" type="button" data-open="vault"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg><span>Game Vault</span></button>
-  <button class="dicon" type="button" data-gm="word"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg><span>Daily Word</span></button>
   <button class="dicon" type="button" data-gm="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" fill="#fff" stroke="#000"/><path d="M1.5 2.5h13v3h-13z" fill="#c00000" stroke="#000"/><path d="M5.8 7.6h4.4v4.4H5.8zM5.8 9.8h4.4M8 7.6v4.4" fill="#ffd800" stroke="#000" stroke-width=".7"/><path d="M4.5 1v3M11.5 1v3" stroke="#000"/></svg><span>Daily Trivia</span></button>
   <button class="dicon" type="button" data-open="trivia"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="1.5" width="15" height="13" fill="#c0c0c0" stroke="#000"/><path d="M5.5 1.5v13M10.5 1.5v13M.5 6h15M.5 10.5h15" stroke="#000"/><path d="M1.5 2.5h3v3h-3z" fill="#ffd800"/><path d="M11.5 7h3v3h-3z" fill="#7fd67f"/><path d="M6.5 11.5h3v2h-3z" fill="#ff8080"/></svg><span>Trivia Board</span></button>
   <button class="dicon" type="button" data-gm="lesson"><svg width="34" height="34" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5L15 6 8 9.5 1 6z" fill="#000080" stroke="#000" stroke-linejoin="round"/><path d="M4 7.6v3.2c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V7.6L8 9.5z" fill="#3a6ea5" stroke="#000" stroke-linejoin="round"/><path d="M13.6 6.7v4.6" stroke="#c00000" stroke-width="1.2"/><circle cx="13.6" cy="11.8" r="1" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg><span>Daily Lesson</span></button>
@@ -2946,7 +2945,7 @@ document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.l
 // ---------- shared leaderboard (db) ----------
 let gmDB=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
 function gmPayload(){const st=GM.st,ds=Object.keys(st.dailies).sort(),last=ds[ds.length-1];const L=gmLevel(st.xp);
-  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,
+  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,games:vBoard(),
     daily:last?{d:last,t:st.dailies[last].t,s:st.dailies[last].s,ms:st.dailies[last].ms,m:st.dailies[last].m}:null}}
 function gmSyncSoon(now){clearTimeout(gmSyncT);gmSyncT=setTimeout(gmSync,now?50:2500)}
 async function gmSync(){if(!gmDB||!gmUid||!gmCanWrite)return;const p=gmPayload(),k=JSON.stringify(p);if(k===gmLastSync)return;
@@ -3005,7 +3004,7 @@ function gmMiniBoard(kind){
     <div class="actions"><span class="spacer"></span><button class="btn" type="button" data-gm="${kind==="trivia"?"lbtriv":"lb"}">Full leaderboard</button></div></div>`;
 }
 function gmDoneFocus(box){gmResolveNames(box);const n=box.querySelector("#gmnm1");if(n&&matchMedia("(pointer:fine)").matches){n.focus({preventScroll:true});return}const ok=box.querySelector(".dlg-body > .actions .btn.default");if(ok)ok.focus({preventScroll:true})}
-function gmRefreshMini(){document.querySelectorAll(".gmminitab").forEach(el=>{el.innerHTML=gmMiniTable(el.dataset.kind);gmResolveNames(el)})}
+function gmRefreshMini(){document.querySelectorAll(".gmminitab").forEach(el=>{el.innerHTML=gmMiniTable(el.dataset.kind);gmResolveNames(el)});vLbRefresh()}
 document.addEventListener("submit",e=>{if(!e.target.classList||!e.target.classList.contains("gmnamef"))return;e.preventDefault();const v=e.target.querySelector("input").value.trim().slice(0,24);if(!v){e.target.querySelector("input").focus();return}
   GM.set.nick=v;gmSave();gmSyncSoon(true);e.target.outerHTML=`<div class="fb ok">Saved! You're on the board as ${esc(v)}.</div>`;gmRefreshMini();if(gmScoresOpen())gmRenderScores()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-gmnameskip]");if(!b)return;GM.nameSkip=true;const f=b.closest("form");if(f)f.remove()});
@@ -3053,7 +3052,8 @@ function gmMeHTML(){
 function gmLbHTML(){
   if(gmDbState!=="on")return `<div class="group"><span class="legend">Leaderboard</span><div>${gmDbState==="connecting"?"Connecting to the leaderboard...":(GM_SB?(GM_SB.url?"Couldn't reach the leaderboard right now.":"The leaderboard isn't set up on this site yet.")+" Your own stats still work here.":"The shared leaderboard works on the published page when you're signed in to Claude. Your own stats still work here.")}</div>${GM_SB&&GM.sbErr?`<div class="note">Details: ${esc(GM.sbErr)}${/anonymous/i.test(GM.sbErr)?" (Turn on anonymous sign-ins in Supabase.)":""}</div>`:""}<div class="note">Anyone can still compare scores with the Share buttons.</div></div>`;
   const t=gmToday(),y=gmDayNum(t);let list=(gmPlayers||[]).slice();
-  const subs=[["today","Today's challenge"],["trivia","Daily trivia"],["xp","All-time XP"],["streak","Streaks"]];
+  const subs=[["today","Today's challenge"],["trivia","Daily trivia"],["xp","All-time XP"],["streak","Streaks"],["games","Game Vault"]];
+  if(GM.lb==="games")return `<div class="menubar">${subs.map(([k,l])=>`<button class="btn" type="button" data-gmlb="${k}" aria-pressed="${GM.lb===k}">${l}</button>`).join("")}</div>${vLbPanel(true)}`;
   const st=p=>p.streakDay&&y-gmDayNum(p.streakDay)<=1?p.streak||0:0;
   let head,rows;
   if(GM.lb==="today"){list=list.filter(p=>p.daily&&p.daily.d===t).sort((a,b)=>b.daily.s-a.daily.s||a.daily.ms-b.daily.ms);head="<th>#</th><th>Player</th><th>Topic</th><th>Result</th><th>Time</th>";
@@ -3100,7 +3100,7 @@ function gmMenu(k){
   const tab=k==="settings"?"settings":k==="lb"?"lb":k==="badges"?"badges":"me";GM.tab=tab;showApp("scores");
 }
 function gmStartItems(){const done=!!GM.st.dailies[gmToday()];
-  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="trivia">${TV16}Daily Trivia <span class="sub">${GM.st.trivia&&GM.st.trivia[gmToday()]?"(done today)":"(9 tiles)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson${gmLessons().length>1?"s":""} <span class="sub">(${esc(gmLesSum())})</span></button></li><li><button type="button" class="prog-item" data-gm="word">${WORD16}Daily Word <span class="sub">(${esc((GV.st.word&&(GV.st.word.days||{})[gmToday()])?"done today":"new word")})</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
+  return `<li><hr></li><li><button type="button" class="prog-item" data-gm="daily">${STAR16}Daily Challenge <span class="sub">${done?"(done today)":"(not played yet)"}</span></button></li><li><button type="button" class="prog-item" data-gm="trivia">${TV16}Daily Trivia <span class="sub">${GM.st.trivia&&GM.st.trivia[gmToday()]?"(done today)":"(9 tiles)"}</span></button></li><li><button type="button" class="prog-item" data-gm="lesson">${GRAD16}Daily Lesson${gmLessons().length>1?"s":""} <span class="sub">(${esc(gmLesSum())})</span></button></li><li><button type="button" class="chk" role="menuitemcheckbox" aria-checked="${GM.set.timer}" data-gmtimer>Timer mode</button></li><li><button type="button" data-gm="settings">&nbsp;&nbsp;&nbsp;&nbsp;Settings...</button></li>${window.ATLAS95_PRIVACY_URL?`<li><button type="button" onclick="window.open(window.ATLAS95_PRIVACY_URL,'_blank','noopener')">&nbsp;&nbsp;&nbsp;&nbsp;Privacy policy</button></li>`:""}`}
 function gmStartScores(){return [["me","My stats"],["lb","Leaderboard"],["badges","Badges"]].map(([k,l])=>`<li><button type="button" data-gm="${k}">${l}</button></li>`).join("")}
 
 // ---------- events ----------
@@ -3337,7 +3337,7 @@ const vMuteBtn=()=>`<button class="btn" type="button" data-vmute aria-pressed="$
 async function vOpen(id){const g=VGAMES.find(x=>x.id===id);if(!g)return;
   if(GV.cur===id&&GV.inst)return;vUnmount();GV.cur=id;
   vEl("vtitle").textContent=`Game Vault - ${g.name}`;
-  vEl("vbar").innerHTML=`<button class="btn" type="button" data-vhome>&lt; All games</button><span class="sep"></span><span id="vgbar" class="vgbar"></span><span class="spacer"></span><button class="btn" type="button" data-vhelp>How to play</button>${vMuteBtn()}`;
+  vEl("vbar").innerHTML=`<button class="btn" type="button" data-vhome>&lt; All games</button><span class="sep"></span><span id="vgbar" class="vgbar"></span><span class="spacer"></span><button class="btn" type="button" data-vlb>Leaderboard</button><button class="btn" type="button" data-vhelp>How to play</button>${vMuteBtn()}`;
   vEl("vstage").innerHTML=`<div class="vgame" id="vgroot"><div class="note">Loading ${esc(g.name)}...</div></div>`;
   vEl("vst1").textContent=g.name;vEl("vst2").textContent="";vStatusXP();
   try{await vLoad(id)}catch(e){if(GV.cur!==id)return;vEl("vgroot").innerHTML=`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>${esc(g.name)} didn't load</b>Check your connection and try again.</div></div><div class="actions"><button class="btn default" type="button" data-vg="${id}" data-vretry>Try again</button></div>`;GV.cur=null;return}
@@ -3359,6 +3359,51 @@ document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.cl
   if(b.hasAttribute("data-vmute")){GV.set.mute=!GV.set.mute;vSave();document.querySelectorAll("[data-vmute]").forEach(x=>{x.outerHTML=vMuteBtn()})}});
 function vScoreRows(){const rows=VGAMES.map(g=>{const s=GV.st[g.id]||{};return `<tr><td>${esc(g.name)}</td><td>${s.plays||0}</td><td>${esc(g.line?g.line(s):s.bestText||"--")}</td></tr>`}).join("");
   return `<div class="group"><span class="legend">Game Vault</span><table class="gmtable"><thead><tr><th>Game</th><th>Played</th><th>Best</th></tr></thead><tbody>${rows}</tbody></table><div class="actions"><button class="btn" type="button" data-open="vault">${JOY16} Open the Game Vault</button></div></div>`}
+
+// ---- Game Vault leaderboards: each player's bests ride along in their leaderboard entry (gmPayload().games) ----
+const VG_MEMSZ={easy:"Easy",normal:"Normal",hard:"Hard"},VG_MEMMODE={shapes:"shapes",flags:"flags",elements:"elements"};
+// variants: [key,label]; the first one is the default
+const VLB={word:[["today","Today"],["streak","Streaks"]],memory:[["normal","Normal"],["easy","Easy"],["hard","Hard"]]};
+GV.lb={g:"word",v:null};
+function vBoard(){const s=GV.st,o={};
+  if(s.snake&&s.snake.best!=null)o.snake=s.snake.best;
+  if(s.circle&&s.circle.best!=null)o.circle=s.circle.best;
+  if(s.memory&&s.memory.bests){const m={};Object.entries(s.memory.bests).forEach(([k,x])=>{const [md,sz]=k.split("|"),b=m[sz];if(!b||x.moves<b.m||x.moves===b.m&&x.ms<b.ms)m[sz]={m:x.moves,ms:x.ms,md}});if(Object.keys(m).length)o.memory=m}
+  if(s.connect4&&s.connect4.rec){const r=s.connect4.rec,w=k=>(r[k]&&r[k].w)||0;if(w("hard")||w("medium")||w("easy"))o.c4={h:w("hard"),m:w("medium"),e:w("easy")}}
+  if(s.word&&s.word.days){const last=Object.keys(s.word.days).sort().pop();if(last){const d=s.word.days[last];o.word={d:last,n:d.won?d.n:7,st:s.word.streak||0,mx:s.word.maxStreak||0}}}
+  return o}
+function vLbRows(id,v){const t=gmToday(),y=gmDayNum(t),me=gmPayload();let list=(gmPlayers||[]).slice();
+  if(gmUid&&!list.some(p=>p.id===gmUid))list.push(Object.assign({id:gmUid},me));else list=list.map(p=>p.id===gmUid?Object.assign({},p,me,{id:gmUid}):p);
+  const G=p=>p.games||{};let rows=[];
+  if(id==="word"&&v==="streak"){const s=p=>{const w=G(p).word;return w&&w.d&&y-gmDayNum(w.d)<=1?w.st||0:0};rows=list.filter(p=>s(p)>0).map(p=>({p,k:[-s(p),-(G(p).word.mx||0)],show:`${GM_FIRE} ${s(p)} <span class="sub">(best ${G(p).word.mx||0})</span>`}))}
+  else if(id==="word")rows=list.filter(p=>G(p).word&&G(p).word.d===t).map(p=>{const n=G(p).word.n;return {p,k:[n],show:n>6?"X/6":`${n}/6`}});
+  else if(id==="snake")rows=list.filter(p=>G(p).snake!=null).map(p=>({p,k:[-G(p).snake],show:`${G(p).snake} apple${G(p).snake===1?"":"s"}`}));
+  else if(id==="circle")rows=list.filter(p=>G(p).circle!=null).map(p=>({p,k:[-G(p).circle],show:`${(+G(p).circle).toFixed(1)}%`}));
+  else if(id==="memory")rows=list.filter(p=>G(p).memory&&G(p).memory[v]).map(p=>{const b=G(p).memory[v];return {p,k:[b.m,b.ms],show:`${b.m} moves &middot; ${gmFmtT(b.ms)} <span class="sub">(${esc(VG_MEMMODE[b.md]||"")})</span>`}});
+  else if(id==="connect4")rows=list.filter(p=>G(p).c4).map(p=>{const c=G(p).c4;return {p,k:[-(c.h||0),-(c.m||0),-(c.e||0)],show:`Hard ${c.h||0} &middot; Medium ${c.m||0} &middot; Easy ${c.e||0}`}});
+  rows.sort((a,b)=>{for(let i=0;i<a.k.length;i++)if(a.k[i]!==b.k[i])return a.k[i]-b.k[i];return 0});return rows}
+const VLB_HEAD={word:{today:"Guesses",streak:"Streak"},snake:"Best",circle:"Best circle",memory:"Fewest moves",connect4:"Wins vs computer"};
+const VLB_EMPTY={word:{today:"Nobody has solved today's word yet. Be the first!",streak:"No Daily Word streaks yet."},snake:"No Snake scores yet.",circle:"No circles drawn yet.",memory:"No wins at this size yet.",connect4:"Nobody has beaten the computer yet."};
+// one game's board; picker adds the game dropdown (used on the Scoreboard)
+function vLbPanel(picker){const id=GV.lb.g,vars=VLB[id],v=vars?(vars.some(x=>x[0]===GV.lb.v)?GV.lb.v:vars[0][0]):null;
+  const pick=picker?`<label for="vlbg">Game:</label><select class="sel95" id="vlbg" data-vlbg>${VGAMES.map(g=>`<option value="${g.id}"${g.id===id?" selected":""}>${esc(g.name)}</option>`).join("")}</select>`:"";
+  const tabs=vars?vars.map(([k,l])=>`<button class="btn" type="button" data-vlbv="${k}" aria-pressed="${k===v}">${l}</button>`).join(""):"";
+  const pick1=v&&VLB_HEAD[id][v]?VLB_HEAD[id][v]:VLB_HEAD[id],empty=v&&VLB_EMPTY[id][v]?VLB_EMPTY[id][v]:VLB_EMPTY[id];
+  let body;
+  if(gmDbState!=="on")body=`<div class="note">${gmDbState==="connecting"?"Loading the leaderboard...":"The leaderboard is offline right now. Your scores are still saved on this device."}</div>`;
+  else{const rows=vLbRows(id,v),mi=rows.findIndex(r=>r.p.id===gmUid);let show=rows.slice(0,20).map((r,i)=>[r,i]);if(mi>=20)show.push([rows[mi],mi]);
+    body=rows.length?`<div class="gmtwrap"><table class="gmtable gmlb"><thead><tr><th>#</th><th>Player</th><th>${pick1}</th></tr></thead><tbody>${show.map(([r,i])=>`<tr class="${r.p.id===gmUid?"me":""}"><td>${i+1}</td><td><span data-pid="${esc(r.p.id)}" data-nick="${esc(r.p.nick||"")}">${esc(r.p.nick||"...")}</span>${r.p.id===gmUid?" (you)":""}</td><td>${r.show}</td></tr>`).join("")}</tbody></table></div>${mi>=0&&rows.length>1?`<div class="note">${mi===0?"You're in first place!":`You're #${mi+1} of ${rows.length}.`}</div>`:""}`:`<div class="group"><div>${empty}</div></div>`}
+  const askName=GM_SB&&!GM.set.nick&&gmDbState==="on";
+  return `${pick||tabs?`<div class="menubar vlbbar">${pick}${tabs}</div>`:""}${askName?`<form class="gmnamef" autocomplete="off"><label for="gmnm1"><b>Put your name on the leaderboard</b></label><div class="row"><input class="gmin" id="gmnm1" maxlength="24" placeholder="Your name or nickname" aria-label="Leaderboard name"><button class="btn default" type="submit">Save</button></div><div class="note">Other players will see this name. Don't use your full name.</div></form>`:""}<div class="vlbbody">${body}</div>`}
+function vLbShow(){const g=VGAMES.find(x=>x.id===GV.lb.g);if(!g)return;
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="vlbt"><div class="titlebar">${g.icon}<span class="t" id="vlbt">${esc(g.name)} leaderboard</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body" id="vlbdlg">${vLbPanel(false)}<div class="actions"><span class="spacer"></span><button class="btn default" type="button" data-vclose>OK</button></div></div></div></div>`;
+  gmResolveNames(VDLG);const f=VDLG.querySelector("#gmnm1")||VDLG.querySelector(".btn.default");if(f&&matchMedia("(pointer:fine)").matches)f.focus({preventScroll:true})}
+// new scores or names arrived: redraw whichever game board is showing
+function vLbRefresh(){if(document.getElementById("vlbdlg"))vLbShow();else if(gmScoresOpen()&&GM.tab==="lb"&&GM.lb==="games"&&!document.activeElement.closest?.(".gmnamef"))gmRenderScores()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-vlbv],[data-vlb]");if(!b)return;
+  if(b.hasAttribute("data-vlb")){GV.lb={g:GV.cur||GV.lb.g,v:null};vLbShow();return}
+  GV.lb.v=b.dataset.vlbv;if(VDLG.contains(b))vLbShow();else gmRenderScores()});
+document.addEventListener("change",e=>{if(!e.target.matches||!e.target.matches("[data-vlbg]"))return;GV.lb={g:e.target.value,v:null};gmRenderScores()});
 
 // ================= Desktop: programs, taskbar, Start menu =================
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
@@ -3406,7 +3451,7 @@ function deskLayout(){
   // saved spots first (if they still fit on this screen)
   icons.forEach(el=>{const p=deskPos[iconKey(el)];if(p&&p.c<g.cols&&!taken.has(p.c+","+p.r)){place[iconKey(el)]=p;taken.set(p.c+","+p.r,1)}});
   // default: Daily Challenge and Scoreboard sit at the bottom of the first column
-  const R=g.cols-1,defaults={"vault":{c:0,r:0},"gm-word":{c:0,r:1},"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"gm-trivia":{c:R,r:2},"scores":{c:R,r:3}};
+  const R=g.cols-1,defaults={"vault":{c:0,r:0},"gm-lesson":{c:R,r:0},"gm-daily":{c:R,r:1},"gm-trivia":{c:R,r:2},"scores":{c:R,r:3}};
   icons.forEach(el=>{const k=iconKey(el),d=defaults[k];if(!place[k]&&d&&!taken.has(d.c+","+d.r)){place[k]=d;taken.set(d.c+","+d.r,1)}});
   let i=0;icons.forEach(el=>{const k=iconKey(el);if(place[k])return;let c;do{c=cellOf(i++,g)}while(taken.has(c.c+","+c.r));place[k]=c;taken.set(c.c+","+c.r,1)});
   let maxR=g.rows-1;icons.forEach(el=>{const p=place[iconKey(el)];el.style.left=p.c*CELL_W+"px";el.style.width=Math.min(92,CELL_W-4)+"px";el.style.top=p.r*CELL_H+"px";if(p.r>maxR)maxR=p.r});

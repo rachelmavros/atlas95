@@ -45,14 +45,15 @@ A95G.connect4={
 help:`<div>Take turns dropping discs into the columns. The first to get <b>four in a row</b> wins: across, up and down, or diagonally.</div>
 <ul class="factlist"><li>Click or tap a column to drop your disc. On a keyboard, press 1 to 7.</li><li>You're <b style="color:#c00000">red</b>. Against the computer, who goes first switches every game.</li><li>Pick <b>2 players</b> to play a friend on the same screen.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.lvl=st.lvl||"medium";if(LEVELS[st.lvl]==null&&st.lvl!=="2p")st.lvl="medium";
+  api.css(CSS);const st=api.stats;st.rec=st.rec||{};st.lvl=st.lvl||"medium";if(LEVELS[st.lvl]==null&&st.lvl!=="2p")st.lvl="medium";
   let b,turn,over,busy,first=st.first===2?2:1,aiT=null;
   api.bar.innerHTML=`<button class="btn" type="button" data-c4="new">New game</button><select class="sel95" data-c4lvl aria-label="Opponent">${Object.entries(LEVELS).map(([k,v])=>`<option value="${k}"${st.lvl===k?" selected":""}>vs Computer: ${v.label}</option>`).join("")}<option value="2p"${st.lvl==="2p"?" selected":""}>2 players</option></select>`;
   api.root.innerHTML=`<div class="c4-wrap"><div class="c4-msg" aria-live="polite"></div><div class="c4-board"></div></div>`;
   const board=api.root.querySelector(".c4-board"),msg=api.root.querySelector(".c4-msg");
   const vsAI=()=>st.lvl!=="2p";
   const name=p=>vsAI()?(p===1?"You":"Computer"):(p===1?"Red":"Yellow");
-  function status(){api.status(vsAI()?`${LEVELS[st.lvl].label}: won ${st.w||0}, lost ${st.l||0}, drew ${st.d||0}`:"2 players","")}
+  const rec=()=>st.rec[st.lvl]||(st.rec[st.lvl]={w:0,l:0,d:0});
+  function status(){const r=vsAI()?rec():null;api.status(r?`${LEVELS[st.lvl].label}: won ${r.w}, lost ${r.l}, drew ${r.d}`:"2 players","")}
   function draw(last,wins){board.style.setProperty("--c4you",turn===1?"#e00000":"#ffd800");
     board.innerHTML=[...Array(W)].map((_,c)=>`<button type="button" class="c4-col" data-c="${c}" aria-label="Column ${c+1}"${over||busy||top(b,c)<0?" disabled":""}><span class="c4-cell hint"></span>${[...Array(H)].map((_,k)=>{const r=H-1-k,v=b[c][r],isLast=last&&last[0]===c&&last[1]===r,w=wins&&wins.some(([x,y])=>x===c&&y===r);
       return `<span class="c4-cell${v===1?" r":v===2?" y":""}${isLast&&!api.reduced()?" drop":""}${w?" win":""}"${isLast?` style="--c4from:-${(H-r)*112}%"`:""}></span>`}).join("")}</button>`).join("")}
@@ -67,9 +68,9 @@ mount(api){
     const f=board.querySelector(`.c4-col[data-c="${c}"]`)||board.querySelector(".c4-col:not(:disabled)");if(f&&!over&&matchMedia("(pointer:fine)").matches)f.focus({preventScroll:true})},420)}
   function end(w,last){over=true;draw(last,w?lines(b,w).flat():null);
     if(!vsAI()){msg.textContent=w?`${name(w)} wins!`:"It's a draw.";api.sound(w?"win":"tap");api.result({xp:2});status();return}
-    let r;if(w===1){st.w=(st.w||0)+1;if(st.lvl==="hard")st.hardW=(st.hardW||0)+1;r=api.result({xp:({easy:5,medium:10,hard:20})[st.lvl]});msg.textContent=`You win!${r.xp?` +${r.xp} XP`:""}`;api.sound("win")}
-    else if(w===2){st.l=(st.l||0)+1;r=api.result({xp:2});msg.textContent="The computer wins. Try again!";api.sound("lose")}
-    else{st.d=(st.d||0)+1;r=api.result({xp:4});msg.textContent="It's a draw."}
+    let r;if(w===1){st.w=(st.w||0)+1;rec().w++;if(st.lvl==="hard")st.hardW=(st.hardW||0)+1;r=api.result({xp:({easy:5,medium:10,hard:20})[st.lvl]});msg.textContent=`You win!${r.xp?` +${r.xp} XP`:""}`;api.sound("win")}
+    else if(w===2){st.l=(st.l||0)+1;rec().l++;r=api.result({xp:2});msg.textContent="The computer wins. Try again!";api.sound("lose")}
+    else{st.d=(st.d||0)+1;rec().d++;r=api.result({xp:4});msg.textContent="It's a draw."}
     first=3-first;st.first=first;api.save();status();
     msg.insertAdjacentHTML("beforeend",` <button class="btn default" type="button" data-c4="new">Play again</button>`)}
   api.on(api.root,"click",e=>{const col=e.target.closest(".c4-col");if(col&&!col.disabled){play(+col.dataset.c);return}if(e.target.closest("[data-c4]"))reset()});
