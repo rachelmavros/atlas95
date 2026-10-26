@@ -18,20 +18,21 @@ mount(api){
   api.bar.innerHTML=`<button class="btn" type="button" data-fg="new">New game</button>`;
   api.root.innerHTML=`<div class="fg-wrap"><div class="fg-screen" role="button" tabindex="0" aria-label="Flap"><canvas width="${W*2}" height="${H*2}"></canvas><div class="fg-msg"></div></div></div>`;
   const cv=api.root.querySelector("canvas"),cx=cv.getContext("2d"),msg=api.root.querySelector(".fg-msg"),screen=api.root.querySelector(".fg-screen");cx.scale(2,2);
-  let y,vy,pipes,score,phase,raf=null,last=0,acc=0,dist,ang,ground=0,clouds;
+  let y,vy,pipes,score,phase,raf=null,last=0,dist,ang,ground=0,clouds;
   function reset(){y=H*.42;vy=0;pipes=[];score=0;dist=0;ang=0;phase="ready";
     clouds=[...Array(5)].map((_,i)=>({x:i*80+Math.random()*40,y:30+Math.random()*180,s:.6+Math.random()*.7}));
     show(`<big>Flappy Globe</big><div>${matchMedia("(pointer:fine)").matches?"Click or press Space to flap":"Tap to flap"}</div>${st.best?`<div class="note">Best: ${st.best}</div>`:""}`);status();draw();loop()}
   function show(h){msg.innerHTML=h?`<div class="dlg"><div class="dlg-body">${h}</div></div>`:"";msg.hidden=!h}
   function status(){api.status(`Score: ${score}`,`Best: ${st.best||0}`)}
   function flap(){if(phase==="over"){if(performance.now()-dist>500)reset();return}
-    if(phase!=="run"){phase="run";show("");last=performance.now();acc=0}vy=-7.4;api.sound("tap")}
+    if(phase!=="run"){phase="run";show("");last=performance.now()}vy=-7.4;api.sound("tap")}
   function spawn(){const lo=70,hi=H-GROUND-GAP-70;pipes.push({x:W+20,top:lo+Math.random()*(hi-lo),done:false})}
   function speed(){return 2.3+Math.min(score,40)*.025}
-  function step(){vy=Math.min(vy+.42,10);y+=vy;ang=Math.max(-.5,Math.min(1.2,vy/9));ground=(ground+speed())%24;
-    clouds.forEach(c=>{c.x-=c.s*.5;if(c.x<-60){c.x=W+30;c.y=30+Math.random()*180}});
+  // k = how many 60fps frames this step covers, so motion is the same speed on 60Hz and 120Hz screens
+  function step(k){vy=Math.min(vy+.42*k,10);y+=vy*k;ang=Math.max(-.5,Math.min(1.2,vy/9));ground=(ground+speed()*k)%24;
+    clouds.forEach(c=>{c.x-=c.s*.5*k;if(c.x<-60){c.x=W+30;c.y=30+Math.random()*180}});
     if(!pipes.length||pipes[pipes.length-1].x<W-SPACING)spawn();
-    pipes.forEach(p=>{p.x-=speed();if(!p.done&&p.x+PIPE<W*.3-R){p.done=true;score++;api.sound("eat");status()}});
+    pipes.forEach(p=>{p.x-=speed()*k;if(!p.done&&p.x+PIPE<W*.3-R){p.done=true;score++;api.sound("eat");status()}});
     pipes=pipes.filter(p=>p.x>-PIPE-10);
     const bx=W*.3;if(y+R>H-GROUND||y-R<0)return over();
     for(const p of pipes){if(bx+R>p.x+3&&bx-R<p.x+PIPE-3&&(y-R<p.top||y+R>p.top+GAP))return over()}}
@@ -39,13 +40,14 @@ mount(api){
     const r=api.result(score?{score,text:`${score} gap${score===1?"":"s"}`,xp:Math.min(score*2,25)}:{});
     show(`<big>${score}</big><div>${score===1?"gap":"gaps"} cleared${r.best?" &middot; <b>New best!</b>":st.best?` &middot; Best: ${st.best}`:""}</div>${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<button class="btn default" type="button" data-fg="new">Play again</button>`);status()}
   function loop(){cancelAnimationFrame(raf);raf=requestAnimationFrame(function f(t){
-    if(phase==="run"){acc+=Math.min(100,t-last);last=t;while(acc>=1000/60&&phase==="run"){step();acc-=1000/60}}
+    if(phase==="run"){const k=Math.max(0,Math.min(100,t-last))/(1000/60),n=Math.ceil(k);last=t;for(let i=0;i<n&&phase==="run";i++)step(k/n)}
     else if(phase==="ready"){y=H*.42+Math.sin(t/260)*6;ground=(ground+1.2)%24}
     draw();if(phase!=="over")raf=requestAnimationFrame(f)})}
   function pillar(x,y0,h,capTop){cx.fillStyle="#c0c0c0";cx.fillRect(x,y0,PIPE,h);cx.fillStyle="#fff";cx.fillRect(x,y0,3,h);cx.fillStyle="#808080";cx.fillRect(x+PIPE-4,y0,4,h);
     const cy=capTop?y0+h-18:y0;cx.fillStyle="#c0c0c0";cx.fillRect(x-4,cy,PIPE+8,18);cx.fillStyle="#fff";cx.fillRect(x-4,cy,PIPE+8,2);cx.fillRect(x-4,cy,2,18);cx.fillStyle="#404040";cx.fillRect(x-4,cy+16,PIPE+8,2);cx.fillRect(x+PIPE+2,cy,2,18);
     cx.strokeStyle="#000";cx.lineWidth=1;cx.strokeRect(x-3.5,cy+.5,PIPE+7,17)}
-  function draw(){const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#1084d0");g.addColorStop(1,"#8fd8ff");cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  const sky=cx.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#1084d0");sky.addColorStop(1,"#8fd8ff");
+  function draw(){cx.fillStyle=sky;cx.fillRect(0,0,W,H);
     cx.fillStyle="rgba(255,255,255,.85)";clouds.forEach(c=>{cx.fillRect(c.x,c.y,44*c.s,10*c.s);cx.fillRect(c.x+10*c.s,c.y-8*c.s,24*c.s,10*c.s)});
     pipes.forEach(p=>{pillar(p.x,0,p.top,true);pillar(p.x,p.top+GAP,H-GROUND-p.top-GAP,false)});
     cx.fillStyle="#008080";cx.fillRect(0,H-GROUND,W,GROUND);cx.fillStyle="#006060";for(let x=-ground;x<W;x+=24)cx.fillRect(x,H-GROUND,12,6);cx.fillStyle="#000";cx.fillRect(0,H-GROUND,W,2);

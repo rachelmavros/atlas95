@@ -35,31 +35,32 @@ const counts=s=>{const c={};for(const ch of s)c[ch]=(c[ch]||0)+1;return c};
 const fits=(w,bc)=>{const c={};for(const ch of w){c[ch]=(c[ch]||0)+1;if(!bc[ch]||c[ch]>bc[ch])return false}return true};
 A95G.anagram={
 help:`<div>You get six letters. Make as many words as you can from them before the clock runs out. Each word needs 3 letters or more.</div>
-<ul class="factlist"><li>Tap the letters (or type them), then press <b>Enter</b>. <b>Shuffle</b> mixes the letters up for a fresh look.</li><li>The boxes show every common word hiding in the letters. Uncommon words still count as bonus words.</li><li>Find a word that uses <b>all six letters</b> to move on to the next round. If time runs out first, the game is over.</li><li>Longer words score more: 50, 100, 200, then 400 points for six letters. Find every word in a round for a ${ALL_BONUS}-point bonus.</li></ul>`,
+<ul class="factlist"><li>Tap the letters (or type them), then press <b>Enter</b>. <b>Shuffle</b> mixes the letters up for a fresh look.</li><li>The boxes show every common word hiding in the letters. Uncommon words still count as bonus words.</li><li>Find a word that uses <b>all six letters</b> to move on to the next round. If time runs out first, the game is over.</li><li>Longer words score more: 50, 100, 200, then 400 points for six letters. Find every word in a round for a ${ALL_BONUS}-point bonus.</li></ul><div><b>Relaxed</b> mode has no time limit. The clock just counts how long you take, and you keep going until you find every word (or press <b>Reveal answers</b>).</div>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.recent=st.recent||[];
-  let phase="ready",round=0,total=0,base,letters,words,found,bonus,guess=[],t0=0,left=ROUND_MS,tick=null,got6=false;
-  api.bar.innerHTML=`<button class="btn" type="button" data-ag="new">New game</button>`;
+  api.css(CSS);const st=api.stats;st.recent=st.recent||[];let mode=st.mode==="relax"?"relax":"sprint";const relax=()=>mode==="relax";
+  let phase="ready",round=0,total=0,base,letters,words,found,bonus,guess=[],t0=0,left=ROUND_MS,tick=null,got6=false,pausedAt=0;
+  const bar=()=>{api.bar.innerHTML=`<button class="btn" type="button" data-ag="new">New game</button><span class="sep"></span><button class="btn" type="button" data-agm="sprint" aria-pressed="${!relax()}">Sprint</button><button class="btn" type="button" data-agm="relax" aria-pressed="${relax()}">Relaxed</button>`};bar();
   api.root.innerHTML=`<div class="ag-wrap"></div>`;const wrap=api.root.querySelector(".ag-wrap");
   function pickBase(){let b;for(let k=0;k<30;k++){b=BASES[Math.floor(Math.random()*BASES.length)];if(!st.recent.includes(b))break}st.recent=[b,...st.recent].slice(0,60);api.save();return b}
   function startRound(){round++;base=pickBase();const bc=counts(base);
     words=[...LISTED].filter(w=>fits(w,bc)).sort((a,b)=>a.length-b.length||(a<b?-1:1));
     letters=api.shuffle([...base],Math.random);found=new Set();bonus=[];guess=[];got6=false;left=ROUND_MS;t0=Date.now();phase="run";
-    render();clearInterval(tick);tick=setInterval(clock,250);say(round===1?"Go!":`Round ${round}. Go!`)}
-  function clock(){left=Math.max(0,ROUND_MS-(Date.now()-t0));const e=wrap.querySelector("#agt");if(e){e.textContent=api.fmtTime(left);e.parentElement.classList.toggle("low",left<15000)}if(!left)endRound(false)}
+    render();clearInterval(tick);tick=setInterval(clock,250);say(relax()?`Find all ${words.length} words. Take your time.`:round===1?"Go!":`Round ${round}. Go!`)}
+  function clock(){if(relax()){const e=wrap.querySelector("#agt");if(e)e.textContent=api.fmtTime(Date.now()-t0);return}left=Math.max(0,ROUND_MS-(Date.now()-t0));const e=wrap.querySelector("#agt");if(e){e.textContent=api.fmtTime(left);e.parentElement.classList.toggle("low",left<15000)}if(!left)endRound(false)}
   function say(t){const e=wrap.querySelector(".ag-msg");if(e)e.textContent=t}
-  function head(){return `<div class="ag-head"><div><small>ROUND</small><b>${round||"-"}</b></div><div><small>SCORE</small><b id="ags">${total.toLocaleString("en-US")}</b></div><div${left<15000&&phase==="run"?' class="low"':""}><small>TIME</small><b id="agt">${api.fmtTime(left)}</b></div></div>`}
+  function head(){if(relax())return `<div class="ag-head"><div><small>FOUND</small><b id="agf">${found?found.size:0}/${words?words.length:"-"}</b></div><div><small>SOLVED</small><b>${st.solved||0}</b></div><div><small>TIME</small><b id="agt">${api.fmtTime(phase==="ready"?0:(phase==="run"?Date.now():pausedAt||Date.now())-t0)}</b></div></div>`;
+    return `<div class="ag-head"><div><small>ROUND</small><b>${round||"-"}</b></div><div><small>SCORE</small><b id="ags">${total.toLocaleString("en-US")}</b></div><div${left<15000&&phase==="run"?' class="low"':""}><small>TIME</small><b id="agt">${api.fmtTime(left)}</b></div></div>`}
   function wordsHTML(reveal){return `<div class="ag-words" aria-label="Words to find">${words.map(w=>{const g=found.has(w),cls=g?" got":reveal?" ag-miss":"";return `<span class="ag-w${cls}" data-w="${w}" aria-label="${g||reveal?w:w.length+" letters"}">${[...w].map(ch=>`<i>${g||reveal?ch:""}</i>`).join("")}</span>`}).join("")}</div>`}
-  function render(){if(phase==="ready"){wrap.innerHTML=`${head()}<div class="dlg" style="width:auto"><div class="dlg-body" style="align-items:center;text-align:center"><big style="font-size:22px;font-weight:700">Anagram Sprint</big><div>Make words from six letters. Use all six to reach the next round.</div>${st.best?`<div class="note">Best: ${st.best.toLocaleString("en-US")} (round ${st.bestR||1})</div>`:""}<button class="btn default" type="button" data-ag="start">Start</button></div></div>`;wrap.querySelector("[data-ag=start]").focus({preventScroll:true});status();return}
+  function render(){if(phase==="ready"){wrap.innerHTML=`${head()}<div class="dlg" style="width:auto"><div class="dlg-body" style="align-items:center;text-align:center"><big style="font-size:22px;font-weight:700">${relax()?"Anagrams: Relaxed":"Anagram Sprint"}</big><div>${relax()?"No time limit. Find every word hiding in six letters.":"Make words from six letters. Use all six to reach the next round."}</div>${relax()?(st.solved?`<div class="note">Boards solved: ${st.solved}${st.fast?` &middot; fastest ${api.fmtTime(st.fast)}`:""}</div>`:""):st.best?`<div class="note">Best: ${st.best.toLocaleString("en-US")} (round ${st.bestR||1})</div>`:""}<button class="btn default" type="button" data-ag="start">Start</button></div></div>`;wrap.querySelector("[data-ag=start]").focus({preventScroll:true});status();return}
     const run=phase==="run";
     wrap.innerHTML=`${head()}${wordsHTML(!run)}<div class="ag-bonus">${bonus.length?`Bonus words: <b>${bonus.join(", ")}</b>`:""}</div><div class="ag-msg" aria-live="polite"></div>
       ${run?`<div class="ag-guess">${[0,1,2,3,4,5].map(i=>`<span>${guess[i]!=null?letters[guess[i]]:""}</span>`).join("")}</div>
       <div class="ag-tiles">${letters.map((ch,i)=>`<button class="btn" type="button" data-t="${i}"${guess.includes(i)?" disabled":""} aria-label="${ch}">${ch}</button>`).join("")}</div>
-      <div class="actions" style="justify-content:center"><button class="btn" type="button" data-ag="shuffle">Shuffle</button><button class="btn" type="button" data-ag="back">⌫ Back</button><button class="btn default" type="button" data-ag="enter">Enter</button></div>`:`<div class="ag-end"></div>`}`;
+      <div class="actions" style="justify-content:center"><button class="btn" type="button" data-ag="shuffle">Shuffle</button><button class="btn" type="button" data-ag="back">⌫ Back</button><button class="btn default" type="button" data-ag="enter">Enter</button>${relax()?`<button class="btn" type="button" data-ag="giveup">Reveal answers</button>`:""}</div>`:`<div class="ag-end"></div>`}`;
     status()}
   function drawGuess(){const g=wrap.querySelector(".ag-guess");if(!g)return;g.innerHTML=[0,1,2,3,4,5].map(i=>`<span>${guess[i]!=null?letters[guess[i]]:""}</span>`).join("");
     wrap.querySelectorAll(".ag-tiles .btn").forEach(b=>b.disabled=guess.includes(+b.dataset.t))}
-  function status(){api.status(`Round ${round||"-"} · ${total.toLocaleString("en-US")} points`,`Best: ${(st.best||0).toLocaleString("en-US")}`)}
+  function status(){if(relax()){api.status(`Relaxed · ${found?found.size:0} of ${words?words.length:"-"} found`,`Boards solved: ${st.solved||0}`);return}api.status(`Round ${round||"-"} · ${total.toLocaleString("en-US")} points`,`Best: ${(st.best||0).toLocaleString("en-US")}`)}
   function add(i){if(phase!=="run"||guess.includes(i)||guess.length>=6)return;guess.push(i);api.sound("tap");drawGuess()}
   function typeLetter(ch){const i=letters.findIndex((c,k)=>c===ch&&!guess.includes(k));if(i>=0)add(i)}
   function bad(t){say(t);const g=wrap.querySelector(".ag-guess");if(g){g.classList.remove("shake");void g.offsetWidth;g.classList.add("shake")}}
@@ -70,10 +71,11 @@ mount(api){
     const pts=PTS[w.length];total+=pts;guess=[];
     if(LISTED.has(w)){found.add(w);const el=wrap.querySelector(`.ag-w[data-w="${w}"]`);if(el){el.classList.add("got","flash");el.setAttribute("aria-label",w);el.innerHTML=[...w].map(ch=>`<i>${ch}</i>`).join("")}}
     else{bonus.push(w);wrap.querySelector(".ag-bonus").innerHTML=`Bonus words: <b>${bonus.join(", ")}</b>`}
-    if(w.length===6&&!got6){got6=true;api.sound("win");say(`${w.toUpperCase()}! +${pts}. You've unlocked the next round.`)}else{api.sound("ding");say(`${w.toUpperCase()} +${pts}`)}
-    wrap.querySelector("#ags").textContent=total.toLocaleString("en-US");drawGuess();status();
+    if(relax()){api.sound(w.length===6?"win":"ding");say(`${w.toUpperCase()}!`);const f=wrap.querySelector("#agf");if(f)f.textContent=`${found.size}/${words.length}`}
+    else if(w.length===6&&!got6){got6=true;api.sound("win");say(`${w.toUpperCase()}! +${pts}. You've unlocked the next round.`)}else{api.sound("ding");say(`${w.toUpperCase()} +${pts}`)}
+    const sc=wrap.querySelector("#ags");if(sc)sc.textContent=total.toLocaleString("en-US");drawGuess();status();
     if(found.size===words.length)endRound(true)}
-  function endRound(all){if(phase!=="run")return;clearInterval(tick);let extra=0;
+  function endRound(all){if(relax()&&(phase==="run"||phase==="paused")){endRelax(all);return}if(phase!=="run")return;clearInterval(tick);let extra=0;
     if(all){extra=ALL_BONUS+Math.round(left/1000)*10;total+=extra}
     phase=got6?"between":"over";render();const end=wrap.querySelector(".ag-end");
     if(phase==="between"){api.sound("win");end.innerHTML=`<div class="fb ok" style="text-align:center">${all?`You found every word! +${extra} bonus`:"Time's up, but you found a six-letter word."}</div><div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-ag="next">Round ${round+1} &gt;</button></div>`}
@@ -81,10 +83,16 @@ mount(api){
       const r=api.result({score:total,text:total.toLocaleString("en-US"),xp:Math.min(30,Math.round(total/150))});api.sound("lose");
       end.innerHTML=`<div class="fb no" style="text-align:center">Time's up! No six-letter word this round.</div><div style="text-align:center">Final score: <b>${total.toLocaleString("en-US")}</b> &middot; reached round ${round}${r.best||r.first?" &middot; <b>New best!</b>":""}${r.xp?` &middot; +${r.xp} XP`:""}</div><div class="note" style="text-align:center">The red words are the ones you missed.</div><div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-ag="new">Play again</button></div>`}
     status();const b=end.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
+  function endRelax(all){clearInterval(tick);const ms=(phase==="paused"?pausedAt:Date.now())-t0;phase="between";pausedAt=ms+t0;
+    if(all){st.solved=(st.solved||0)+1;if(!st.fast||ms<st.fast)st.fast=ms}
+    const r=api.result({xp:all?10:1});render();const end=wrap.querySelector(".ag-end");api.sound(all?"win":"tap");
+    end.innerHTML=`<div class="fb ${all?"ok":"no"}" style="text-align:center">${all?`Solved! All ${words.length} words in ${api.fmtTime(ms)}.`:`You found ${found.size} of ${words.length}. The red ones are the rest.`}</div>${r.xp?`<div class="note" style="text-align:center">+${r.xp} XP</div>`:""}<div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-ag="next">New letters &gt;</button></div>`;
+    status();const b=end.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
   function newGame(){clearInterval(tick);round=0;total=0;phase="ready";left=ROUND_MS;render()}
   api.on(wrap,"click",e=>{const t=e.target.closest("[data-t]");if(t){add(+t.dataset.t);return}const b=e.target.closest("[data-ag]");if(!b)return;act(b.dataset.ag)});
-  api.on(api.bar,"click",e=>{const b=e.target.closest("[data-ag]");if(b)act(b.dataset.ag)});
-  function act(k){if(k==="resume"){if(phase!=="paused")return;t0=Date.now()-(ROUND_MS-left);phase="run";tick=setInterval(clock,250);say("");return}
+  api.on(api.bar,"click",e=>{const m=e.target.closest("[data-agm]");if(m){mode=m.dataset.agm;st.mode=mode;api.save();bar();newGame();return}const b=e.target.closest("[data-ag]");if(b)act(b.dataset.ag)});
+  function act(k){if(k==="resume"){if(phase!=="paused")return;t0+=Date.now()-pausedAt;phase="run";tick=setInterval(clock,250);say("");return}
+    if(k==="giveup"){endRound(false);return}
     if(k==="start"||k==="next")startRound();else if(k==="new")newGame();else if(k==="shuffle"){if(phase!=="run")return;const keep=guess.map(i=>letters[i]);letters=api.shuffle(letters,Math.random);guess=[];keep.forEach(ch=>{const i=letters.findIndex((c,j)=>c===ch&&!guess.includes(j));guess.push(i)});wrap.querySelectorAll(".ag-tiles .btn").forEach((b,i)=>{b.textContent=letters[i];b.setAttribute("aria-label",letters[i])});drawGuess()}
     else if(k==="back"){guess.pop();drawGuess()}else if(k==="enter")submit()}
   api.on(document,"keydown",e=>{if(!api.active()||e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
@@ -92,6 +100,6 @@ mount(api){
     if(/^[a-zA-Z]$/.test(e.key)){typeLetter(e.key.toLowerCase());return}
     if(e.key==="Enter"){e.preventDefault();submit()}else if(e.key==="Backspace"){e.preventDefault();guess.pop();drawGuess()}else if(e.key===" "){e.preventDefault();act("shuffle")}});
   render();
-  return {pause(){if(phase!=="run")return;clearInterval(tick);phase="paused";const m=wrap.querySelector(".ag-msg");if(m)m.innerHTML=`Paused. <button class="btn default" type="button" data-ag="resume">Resume</button>`},unmount(){clearInterval(tick)}};
+  return {pause(){if(phase!=="run")return;clearInterval(tick);phase="paused";pausedAt=Date.now();const m=wrap.querySelector(".ag-msg");if(m)m.innerHTML=`Paused. <button class="btn default" type="button" data-ag="resume">Resume</button>`},unmount(){clearInterval(tick)}};
 }};
 })();
