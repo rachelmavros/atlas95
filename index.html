@@ -2560,7 +2560,8 @@ const GM_BADGES=[
   {k:"flappy10",emo:"🪽",n:"High flyer",d:"Fly through 10 gaps in Flappy Globe",t:()=>!!GV&&(vSt("flappy").best||0)>=10},
   {k:"t2048",emo:"🔢",n:"2048!",d:"Make the 2048 tile",t:()=>!!GV&&((vSt("t2048").won||0)>=1||(vSt("t2048").top||0)>=2048)},
   {k:"minesint",emo:"💣",n:"Minesweeper",d:"Clear a Minesweeper board on Intermediate",t:()=>!!GV&&((vSt("mines").lvWins||{}).int||0)>=1},
-  {k:"ckhard",emo:"👑",n:"King me",d:"Beat the computer at Checkers on Hard",t:()=>!!GV&&(vSt("checkers").hardW||0)>=1}];
+  {k:"ckhard",emo:"👑",n:"King me",d:"Beat the computer at Checkers on Hard",t:()=>!!GV&&(vSt("checkers").hardW||0)>=1},
+  {k:"anag5",emo:"🔀",n:"Letter juggler",d:"Reach round 5 in Anagram Sprint",t:()=>!!GV&&(vSt("anagram").maxR||0)>=5}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -3276,7 +3277,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="2";
+const VG_VER="3";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3310,6 +3311,10 @@ const VGAMES=[
     line:s=>{const b=s.bests||{},k=["exp","int","beg"].find(x=>b[x]!=null);return k?`Best: ${gmFmtT(b[k])} (${({beg:"Beginner",int:"Intermediate",exp:"Expert"})[k]})`:"Not played yet"},
     lb:{vars:[["beg","Beginner"],["int","Intermediate"],["exp","Expert"]],head:"Best time",empty:"Nobody has cleared this field yet.",
       board:s=>s.bests&&Object.keys(s.bests).length?s.bests:null,row:(x,v)=>x[v]!=null?{k:[x[v]],show:gmFmtT(x[v])}:null}},
+  {id:"anagram",name:"Anagram Sprint",blurb:"Make words from six letters before time runs out. Use all six to reach the next round.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="2" width="7" height="6" fill="#ffd800" stroke="#000"/><rect x="8.5" y="8" width="7" height="6" fill="#7fd67f" stroke="#000"/><path d="M2.3 6.6L4 3.4l1.7 3.2M2.9 5.4h2.2M10.4 9.4h1.8a1 1 0 0 1 0 1.3h-1.8v2h2a1 1 0 0 0 0-2" fill="none" stroke="#000" stroke-width=".9"/><path d="M5 10.5c-1.8 0-3-.8-3.5-2.2M11 5.5c1.8 0 3 .8 3.5 2.2" fill="none" stroke="#000080" stroke-width="1.1"/><path d="M.6 7.9l.9 1.1 1.1-.9M15.4 8.1l-.9-1.1-1.1.9" fill="none" stroke="#000080" stroke-width="1.1"/></svg>',
+    line:s=>s.best!=null?`Best: ${s.best.toLocaleString("en-US")} (round ${s.bestR||1})`:"Not played yet",
+    lb:{head:"Best score",empty:"No Anagram Sprint scores yet.",board:s=>s.best!=null?{s:s.best,r:s.bestR||1}:null,row:x=>({k:[-x.s,-(x.r||1)],show:`${x.s.toLocaleString("en-US")} <span class="sub">(round ${x.r||1})</span>`})}},
   {id:"circle",name:"Perfect Circle",blurb:"Draw a circle freehand. How close to perfect can you get?",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M8 2.6c3.2-.1 5.4 2.3 5.3 5.4-.1 3-2.5 5.3-5.4 5.3S2.6 11 2.7 7.9C2.8 5.3 4.6 3 7.6 2.9" fill="none" stroke="#000080" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r=".9" fill="#c00000"/></svg>',
     line:s=>s.best!=null?`Best: ${s.best.toFixed(1)}%`:"Not played yet",
