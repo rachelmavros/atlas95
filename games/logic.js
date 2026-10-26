@@ -2,20 +2,39 @@
 // Puzzles are generated: a random answer, then true clues are added until exactly one answer fits, then extra clues are removed.
 (()=>{
 const NAMES=["Sally","Tom","Mia","Ben","Ava","Leo","Zoe","Max","Ivy","Sam","Lily","Jack","Nora","Owen","Ella","Finn","Ruby","Eli","Rosa","Kai"];
-const cat=(key,label,values,pos,neg,rel,either,ordered)=>({key,label,values,pos,neg,rel,either,ordered:!!ordered});
+// ordered categories (ages, prices, places...) also say how to compare two kids: cmp={more, one} as in "is older than", "is exactly one year older than"
+const cat=(key,label,values,pos,neg,rel,either,cmp)=>({key,label,values,pos,neg,rel,either,ordered:!!cmp,cmp});
 const fill=(t,v)=>t.replace("{v}",v);
 const SNACK=cat("snack","Snack",["apples","cookies","pretzels","grapes","cupcakes"],v=>`swiped the ${v}`,v=>`didn't swipe the ${v}`,v=>`the kid who swiped the ${v}`,(a,b)=>`swiped either the ${a} or the ${b}`);
 const SHIRT=cat("shirt","Shirt",["red","blue","green","yellow","purple"],v=>`wore ${v}`,v=>`didn't wear ${v}`,v=>`the kid in ${v}`,(a,b)=>`wore either ${a} or ${b}`);
 const PET=cat("pet","Pet",["cat","dog","hamster","parrot","rabbit"],v=>`has a ${v}`,v=>`doesn't have a ${v}`,v=>`the ${v}'s owner`,(a,b)=>`has either a ${a} or a ${b}`);
 const RIBBON=cat("ribbon","Ribbon",["blue","red","yellow","green","white"],v=>`won the ${v} ribbon`,v=>`didn't win the ${v} ribbon`,v=>`the ${v} ribbon winner`,(a,b)=>`won either the ${a} or the ${b} ribbon`);
 const ENTRY=cat("entry","Pet",["puppy","kitten","bunny","turtle","parakeet"],v=>`entered the ${v}`,v=>`didn't enter the ${v}`,v=>`the ${v}'s owner`,(a,b)=>`entered either the ${a} or the ${b}`);
-const AGE=(lo)=>cat("age","Age",[0,1,2,3,4].map(i=>String(lo+i)),v=>`is ${v}`,v=>`isn't ${v}`,v=>`the ${v}-year-old`,(a,b)=>`is either ${a} or ${b}`,true);
+const AGE=(lo)=>cat("age","Age",[0,1,2,3,4].map(i=>String(lo+i)),v=>`is ${v}`,v=>`isn't ${v}`,v=>`the ${v}-year-old`,(a,b)=>`is either ${a} or ${b}`,{more:"is older than",one:"is exactly one year older than"});
+const LOST=cat("lost","Lost item",["backpack","umbrella","scarf","water bottle","lunchbox"],v=>`lost the ${v}`,v=>`didn't lose the ${v}`,v=>`the kid who lost the ${v}`,(a,b)=>`lost either the ${a} or the ${b}`);
+const SPOT=cat("spot","Last seen",["gym","library","cafeteria","playground","bus"],v=>`was last seen in the ${v}`,v=>`wasn't last seen in the ${v}`,v=>`the kid last seen in the ${v}`,(a,b)=>`was last seen in either the ${a} or the ${b}`);
+const BAKED=cat("baked","Baked",["brownies","cookies","cupcakes","pie","muffins"],v=>`baked the ${v}`,v=>`didn't bake the ${v}`,v=>`the kid who baked the ${v}`,(a,b)=>`baked either the ${a} or the ${b}`);
+const PRICE=cat("price","Price",["$1","$2","$3","$4","$5"],v=>`charged ${v}`,v=>`didn't charge ${v}`,v=>`the kid who charged ${v}`,(a,b)=>`charged either ${a} or ${b}`,{more:"charged more than",one:"charged exactly $1 more than"});
+const APRON=cat("apron","Apron",["red","blue","green","yellow","pink"],v=>`wore the ${v} apron`,v=>`didn't wear the ${v} apron`,v=>`the kid in the ${v} apron`,(a,b)=>`wore either the ${a} or the ${b} apron`);
+const PROJ=cat("proj","Project",["volcano","robot","rocket","solar oven","crystal garden"],v=>`built the ${v}`,v=>`didn't build the ${v}`,v=>`the kid who built the ${v}`,(a,b)=>`built either the ${a} or the ${b}`);
+const PLACE=cat("place","Place",["1st","2nd","3rd","4th","5th"],v=>`finished ${v}`,v=>`didn't finish ${v}`,v=>`the kid who finished ${v}`,(a,b)=>`finished either ${a} or ${b}`,{more:"finished behind",one:"finished one place behind"});
+const SPOOK=cat("spook","Found",["ghost","bat","skeleton","black cat","spider"],v=>`found the ${v}`,v=>`didn't find the ${v}`,v=>`the kid who found the ${v}`,(a,b)=>`found either the ${a} or the ${b}`);
+const ROOM=cat("room","Room",["attic","basement","kitchen","library","hallway"],v=>`explored the ${v}`,v=>`didn't explore the ${v}`,v=>`the kid who explored the ${v}`,(a,b)=>`explored either the ${a} or the ${b}`);
+const LIGHT=cat("light","Flashlight",["red","blue","green","yellow","purple"],v=>`carried the ${v} flashlight`,v=>`didn't carry the ${v} flashlight`,v=>`the kid with the ${v} flashlight`,(a,b)=>`carried either the ${a} or the ${b} flashlight`);
+const POS=cat("pos","Position",["goalie","defender","midfielder","winger","striker"],v=>`plays ${v}`,v=>`doesn't play ${v}`,v=>`the ${v}`,(a,b)=>`plays either ${a} or ${b}`);
+const GOALS=cat("goals","Goals",["no goals","1 goal","2 goals","3 goals","4 goals"],v=>`scored ${v}`,v=>`didn't score ${v}`,v=>`the kid who scored ${v}`,(a,b)=>`scored either ${a} or ${b}`,{more:"scored more goals than",one:"scored exactly one more goal than"});
+const JERSEY=cat("jersey","Jersey",["#3","#7","#9","#10","#11"],v=>`wears ${v}`,v=>`doesn't wear ${v}`,v=>`the kid wearing ${v}`,(a,b)=>`wears either ${a} or ${b}`);
 const ACT=cat("act","Activity",["archery","canoeing","crafts","hiking","swimming"],v=>`signed up for ${v}`,v=>`didn't sign up for ${v}`,v=>`the kid doing ${v}`,(a,b)=>`signed up for either ${a} or ${b}`);
 const CABIN=cat("cabin","Cabin",["Oak","Pine","Maple","Birch","Cedar"],v=>`slept in ${v} Cabin`,v=>`didn't sleep in ${v} Cabin`,v=>`the kid in ${v} Cabin`,(a,b)=>`slept in either ${a} or ${b} Cabin`);
 const THEMES=[
   {title:"The Snack Swipers",intro:"Snacks went missing from the class party! Each kid swiped exactly one snack, wore a different color, and has a different pet at home.",q:v=>`Who swiped the ${v}?`,a:(p,v)=>`It was ${p} who swiped the ${v}!`,cats:[SNACK,SHIRT,PET]},
   {title:"The Pet Show",intro:"At the town pet show, each kid entered one pet, every pet won a different ribbon, and no two kids are the same age.",q:v=>`Who entered the ${v}?`,a:(p,v)=>`${p} entered the ${v}!`,cats:[ENTRY,RIBBON,AGE(7)]},
-  {title:"Summer Camp",intro:"A group of friends went to summer camp. Each signed up for a different activity, slept in a different cabin, and no two are the same age.",q:v=>`Who signed up for ${v}?`,a:(p,v)=>`${p} signed up for ${v}!`,cats:[ACT,CABIN,AGE(9)]}];
+  {title:"Summer Camp",intro:"A group of friends went to summer camp. Each signed up for a different activity, slept in a different cabin, and no two are the same age.",q:v=>`Who signed up for ${v}?`,a:(p,v)=>`${p} signed up for ${v}!`,cats:[ACT,CABIN,AGE(9)]},
+  {title:"Lost and Found",intro:"A pile of stuff turned up in the lost and found! Each thing belongs to a different kid, and each kid was last seen somewhere different. No two kids are the same age.",q:v=>`Whose ${v} is it?`,a:(p,v)=>`The ${v} belongs to ${p}!`,cats:[LOST,SPOT,AGE(6)]},
+  {title:"The Bake Sale",intro:"It's the school bake sale! Each kid baked something different, charged a different price, and wore a different apron.",q:v=>`Who baked the ${v}?`,a:(p,v)=>`${p} baked the ${v}!`,cats:[BAKED,PRICE,APRON]},
+  {title:"The Science Fair",intro:"The science fair results are in! Each kid built a different project, finished in a different place, and wore a different color.",q:v=>`Who built the ${v}?`,a:(p,v)=>`${p} built the ${v}!`,cats:[PROJ,PLACE,SHIRT]},
+  {title:"The Haunted House",intro:"On a dare, a group of friends explored the old house on the hill. Each found something spooky in a different room, carrying a different flashlight.",q:v=>`Who found the ${v}?`,a:(p,v)=>`${p} found the ${v}!`,cats:[SPOOK,ROOM,LIGHT]},
+  {title:"The Soccer Team",intro:"The team just won the big game! Each player has a different position, scored a different number of goals, and wears a different jersey.",q:v=>`Who plays ${v}?`,a:(p,v)=>`${p} plays ${v}!`,cats:[POS,GOALS,JERSEY]}];
 const LV={daily:{label:"Daily (Medium)",n:4,m:3},easy:{label:"Easy",n:3,m:2},medium:{label:"Medium",n:4,m:3},hard:{label:"Hard",n:5,m:3}};
 const shuf=(a,rnd)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const perms=n=>{const out=[];(function go(a,rest){if(!rest.length){out.push(a);return}rest.forEach((x,i)=>go([...a,x],rest.filter((_,j)=>j!==i)))})([],[...Array(n).keys()]);return out};
@@ -28,8 +47,10 @@ function holds(S,k){const a=who(S,k.a);
   const b=who(S,k.b),d=S[k.c][a]-S[k.c][b];return k.t==="more"?d>0:d===1}
 const catsOf=k=>{const s=new Set();[k.a,k.b,...(k.opts||[])].forEach(r=>{if(r&&r.c!=null)s.add(r.c)});if(k.c!=null)s.add(k.c);return s};
 // how many answers fit the clues (stops at limit); categories are filled one at a time and clues checked as soon as they can be
+// WORK counts arrangements tried, so make() can give up on a slow draw (a step budget, not a clock, keeps seeded puzzles identical on every device)
+let WORK=0;
 function count(n,m,clues,limit){const P=perms(n),byLast=[...Array(m)].map(()=>[]);clues.forEach(k=>{const cs=[...catsOf(k)];byLast[cs.length?Math.max(...cs):0].push(k)});
-  const S=[];let found=0;(function go(c){if(found>=limit)return;if(c===m){found++;return}for(const p of P){S[c]=p;if(byLast[c].every(k=>holds(S,k)))go(c+1);if(found>=limit)return}S.length=c})(0);return found}
+  const S=[];let found=0;(function go(c){if(found>=limit)return;if(c===m){found++;return}for(const p of P){WORK++;S[c]=p;if(byLast[c].every(k=>holds(S,k)))go(c+1);if(found>=limit)return}S.length=c})(0);return found}
 // every true clue about the answer, in all the shapes the text can take
 function candidates(n,m,S,cats,rnd){const out=[],ref=(c,v)=>({c,v}),person=p=>({p});
   for(let p=0;p<n;p++)for(let c=0;c<m;c++)for(let v=0;v<n;v++){const yes=S[c][p]===v;out.push({t:yes?"same":"diff",a:person(p),b:ref(c,v)})}
@@ -42,16 +63,18 @@ function candidates(n,m,S,cats,rnd){const out=[],ref=(c,v)=>({c,v}),person=p=>({
 // how much each kind of clue is wanted at each difficulty (easier puzzles lean on direct clues)
 const WEIGHT={easy:{same:3,diff:2,either:1,more:1,onemore:1},medium:{same:1,diff:3,either:2,more:2,onemore:2},hard:{same:.4,diff:3,either:3,more:3,onemore:3}};
 function make(rnd,lvKey){const L=LV[lvKey],diff=lvKey==="daily"?"medium":lvKey,n=L.n,m=L.m;
-  for(let attempt=0;attempt<40;attempt++){
+  const BUDGET=250000;
+  for(let attempt=0;attempt<40;attempt++){WORK=0;
     const theme=THEMES[Math.floor(rnd()*THEMES.length)],cats=theme.cats.slice(0,m),names=shuf(NAMES,rnd).slice(0,n);
     const vals=cats.map(K=>K.ordered?K.values.slice(0,n):shuf(K.values,rnd).slice(0,n)),S=cats.map(()=>shuf([...Array(n).keys()],rnd));
     const pool=candidates(n,m,S,cats,rnd).map(k=>({k,w:-Math.log(rnd()+1e-9)/WEIGHT[diff][k.t]})).sort((a,b)=>a.w-b.w).map(x=>x.k);
     const qv=Math.floor(rnd()*n),qp=S[0].indexOf(qv);
     // the question can't be answered by one clue on its own
     const direct=k=>k.t==="same"&&((k.a.p===qp&&k.b.c===0&&k.b.v===qv)||(k.b.p===qp&&k.a.c===0&&k.a.v===qv));
-    const clues=[];for(const k of pool){if(direct(k))continue;clues.push(k);if(count(n,m,clues,2)===1)break}
-    if(count(n,m,clues,2)!==1)continue;
-    for(const k of shuf(clues,rnd)){const rest=clues.filter(x=>x!==k);if(count(n,m,rest,2)===1)clues.splice(clues.indexOf(k),1)}
+    const clues=[];for(const k of pool){if(direct(k))continue;clues.push(k);if(count(n,m,clues,2)===1||WORK>BUDGET)break}
+    if(WORK>BUDGET||count(n,m,clues,2)!==1)continue;
+    let slow=false;for(const k of shuf(clues,rnd)){const rest=clues.filter(x=>x!==k);if(count(n,m,rest,2)===1)clues.splice(clues.indexOf(k),1);if(WORK>BUDGET){slow=true;break}}
+    if(slow)continue;
     if(clues.length<n)continue;
     return {theme:THEMES.indexOf(theme),names,vals,S,clues:shuf(clues,rnd),q:qv,n,m}}
   return null}
@@ -63,8 +86,7 @@ function text(P,k){const T=THEMES[P.theme],cats=T.cats,cap=s=>s[0].toUpperCase()
     return `${cap(name(subj))} ${pred(obj,k.t==="diff")}.`}
   if(k.t==="either"){if(k.a.p!=null){const c=k.opts[0].c;return `${cap(name(k.a))} ${cats[c].either(P.vals[c][k.opts[0].v],P.vals[c][k.opts[1].v])}.`}
     return `${cap(name(k.a))} is either ${name(k.opts[0])} or ${name(k.opts[1])}.`}
-  if(k.t==="more")return `${cap(name(k.a))} is older than ${name(k.b)}.`;
-  return `${cap(name(k.a))} is exactly one year older than ${name(k.b)}.`}
+  const K=cats[k.c];return `${cap(name(k.a))} ${k.t==="more"?K.cmp.more:K.cmp.one} ${name(k.b)}.`}
 const CSS=`
 .lg-wrap{display:flex;flex-direction:column;gap:10px;max-width:720px;margin:0 auto;width:100%}
 .lg-story{background:var(--tip);border:1px solid var(--ink);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
