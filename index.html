@@ -2576,6 +2576,7 @@ const GM_BADGES=[
   {k:"rival",emo:"⚔️",n:"Rival",d:"Beat a friend's challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.got.some(x=>vBetter(x.my,x.v,x.h))},
   {k:"podium",emo:"🥉",n:"On the podium",d:"Finish top 3 in a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.length>=1},
   {k:"champ",emo:"🥇",n:"Champion",d:"Win a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.some(x=>x.place===1)},
+  {k:"pin20k",emo:"📍",n:"Pinpoint",d:"Score 20,000 points in a game of Pin Drop",t:()=>!!GV&&Object.values(vSt("pindrop").bests||{}).some(v=>v>=20000)},
   {k:"sudoku1",emo:"🔢",n:"Number cruncher",d:"Solve a Sudoku",t:()=>!!GV&&(vSt("sudoku").wins||0)>=1},
   {k:"sudokuhard",emo:"🧩",n:"Sudoku master",d:"Solve a Hard Sudoku",t:()=>!!GV&&((vSt("sudoku").lvWins||{}).hard||0)>=1},
   {k:"lights10",emo:"💡",n:"Lights out!",d:"Reach level 10 in Lights Out",t:()=>!!GV&&(vSt("lights").maxLevel||0)>=10},
@@ -3298,7 +3299,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="16";
+const VG_VER="17";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3324,6 +3325,12 @@ const VGAMES=[
       board:s=>{const last=Object.keys(s.days||{}).sort().pop();if(!last)return null;const d=s.days[last];return {d:last,n:d.n,g:d.rows.reduce((a,r)=>a+(r==null?10:r+1),0),st:s.streak||0,mx:s.maxStreak||0}},
       row:(x,v,{t,y})=>{if(v==="streak"){const n=x.d&&y-gmDayNum(x.d)<=1?x.st||0:0;return n?{k:[-n,-(x.mx||0)],show:`${GM_FIRE} ${n} <span class="sub">(best ${x.mx||0})</span>`}:null}
         return x.d===t?{k:[-x.n,x.g],show:`${x.n}/4 solved${x.n===4?` <span class="sub">(${x.g} total rows)</span>`:""}`}:null}}},
+  {id:"pindrop",name:"Pin Drop",blurb:"Drop a pin where the city is on a blank map. The closer you land, the more points.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#5cc8ff" stroke="#000"/><path d="M1 6c2-2 4-1 5 0s1 3 3 3 3-2 5-1v7H1z" fill="#7fd67f" stroke="#000" stroke-width=".6"/><path d="M8 13.5L5.4 8.6a3 3 0 1 1 5.2 0z" fill="#e00000" stroke="#000" stroke-width=".8"/><circle cx="8" cy="6.9" r="1" fill="#fff"/></svg>',
+    line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: ${d.s.toLocaleString("en-US")} / 25,000`:"Today's five cities are waiting"},
+    lb:{vars:[["daily","Today"],["caps","Capitals"],["big","Big cities"],["us","US capitals"]],head:"Points",empty:{daily:"Nobody has dropped today's pins yet. Be the first!",caps:"No scores yet.",big:"No scores yet.",us:"No scores yet."},
+      board:s=>{const o={};["caps","big","us"].forEach(k=>{if(s.bests&&s.bests[k]!=null)o[k]=s.bests[k]});const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,s:d.s};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[-x.d.s],show:x.d.s.toLocaleString("en-US")}:null):x[v]!=null?{k:[-x[v]],show:x[v].toLocaleString("en-US")}:null}},
   {id:"snake",name:"Snake",blurb:"Eat the apples, grow longer, don't bite your tail.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#000"/><path d="M2.5 13.5h5v-5h-4v-5h8v6" fill="none" stroke="#00c000" stroke-width="2.2" stroke-linejoin="round"/><rect x="10.3" y="11" width="2.4" height="2.4" fill="#ff3030"/></svg>',
     lb:{head:"Best",empty:"No Snake scores yet.",board:s=>s.best!=null?s.best:null,row:x=>({k:[-x],show:`${x} apple${x===1?"":"s"}`})}},
@@ -3421,7 +3428,11 @@ function vApi(g){
     sound(k){if(!GV.set.mute)vBeep(k)},
     toast:gmToast,
     share(text,btn){GM.share.vg=text;gmShare("vg",btn)},
-    flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,
+    flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,presidents:()=>PRES,
+    geo:()=>({world:features,us:stateFeatures}),
+    // a shareable link that reopens this game with o (see vChBoot); for things a seed can't carry, like a drawing
+    link:o=>vChLink(o).replace("#ch=","#"+g.id+"="),
+    linkData:()=>GV.mode&&GV.mode.type==="link"&&GV.mode.g===g.id?GV.mode.data:null,
     // seeded runs (challenges, the weekly tournament): call begin(opts) at the start of every game and build the board with the generator it returns
     begin:opts=>vBegin(g,opts),seeded:()=>!!(GV.mode&&GV.mode.g===g.id),modeOpts:()=>GV.mode&&GV.mode.g===g.id?GV.mode.opts:null,
     // a finished game: o={score, higher (default true), text, xp, ch:{v,text,higher} for challenges}. Returns {best, first, xp}.
@@ -3537,7 +3548,7 @@ function vRunDone(g,ch){const r=GV.run;if(!r||r.g!==g.id)return;const m=GV.mode&
   if(m&&m.type==="challenge"){const got=GV.ch.got.find(x=>x.i===i);if(got&&vBetter(ch.v,got.my,higher)){got.my=ch.v;got.myt=ch.text}}
   vChSave();gmCheckBadges();gmSyncSoon(true);vModeBanner();vChBar();if(m&&m.type==="challenge")setTimeout(()=>vChResult(g,ch),450)}
 // ---- the strip above a seeded game, and the button in the window's menu bar ----
-function vModeBanner(){const el=vEl("vmode");if(!el)return;const m=GV.mode;if(!m||m.g!==GV.cur){el.innerHTML="";el.hidden=true;return}el.hidden=false;
+function vModeBanner(){const el=vEl("vmode");if(!el)return;const m=GV.mode;if(!m||m.g!==GV.cur||(m.type!=="challenge"&&m.type!=="tour")){el.innerHTML="";el.hidden=true;return}el.hidden=false;
   if(m.type==="challenge"){const got=GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`)||{};
     el.innerHTML=`<span aria-hidden="true">🏁</span><span><b>${esc(m.from)}</b> challenged you: beat <b>${esc(m.t)}</b>. It's the same game you're both playing.${got.my!=null?` Your best: <b>${esc(got.myt)}</b>${vBetter(got.my,m.v,m.h)?" (you're ahead!)":""}`:""}</span><span class="spacer"></span><button class="btn" type="button" data-vmodeoff>Stop challenge</button>`}
   else{const rows=vTourRows(m.w),mi=rows.findIndex(r=>r.p.id===gmUid),mine=GV.tour&&GV.tour.w===m.w?GV.tour:null;
@@ -3576,7 +3587,12 @@ function vChOpen(o){const i=`${o.g}:${o.s}`,from=String(o.n||"A friend").slice(0
   if(!got){got={i,g:o.g,s:o.s,o:o.o||{},from,v:o.v,t:String(o.t).slice(0,40),h:!!o.h,d:gmToday()};GV.ch.got=[got,...GV.ch.got].slice(0,10)}else Object.assign(got,{from,v:o.v,t:String(o.t).slice(0,40)});vChSave();
   GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);
   showApp("vault");vOpen(o.g,{type:"challenge",g:o.g,seed:o.s,opts:o.o||{},from:got.from,v:got.v,t:got.t,h:got.h})}
-function vChBoot(){const m=/[#&]ch=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;try{history.replaceState(null,"",location.href.split("#")[0])}catch(e){}const o=vChParse(m[1]);
+function vChBoot(){const m=/[#&]([a-z0-9]+)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;try{history.replaceState(null,"",location.href.split("#")[0])}catch(e){}
+  // #ch= is a challenge; #<game id>= hands that game whatever it put in the link (api.link)
+  if(m[1]!=="ch"){const g=vGame(m[1]);let o=null;try{let b=m[2].replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";o=JSON.parse(decodeURIComponent(escape(atob(b))))}catch(e){}
+    if(!g||!o){gmToast("That link didn't work. Ask your friend to send it again.");return}
+    setTimeout(()=>{GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);showApp("vault");vOpen(g.id,{type:"link",g:g.id,seed:0,opts:{},data:o})},50);return}
+  const o=vChParse(m[2]);
   if(o)setTimeout(()=>vChOpen(o),50);else gmToast("That challenge link didn't work. Ask your friend to send it again.")}
 addEventListener("hashchange",vChBoot);
 // ---- tournament standings, from everyone's leaderboard entries (gmPayload().tour / tourL) ----
