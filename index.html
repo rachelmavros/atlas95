@@ -2575,7 +2575,9 @@ const GM_BADGES=[
   {k:"chal1",emo:"🏁",n:"Challenger",d:"Send a friend a challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.sent.length>=1},
   {k:"rival",emo:"⚔️",n:"Rival",d:"Beat a friend's challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.got.some(x=>vBetter(x.my,x.v,x.h))},
   {k:"podium",emo:"🥉",n:"On the podium",d:"Finish top 3 in a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.length>=1},
-  {k:"champ",emo:"🥇",n:"Champion",d:"Win a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.some(x=>x.place===1)}];
+  {k:"champ",emo:"🥇",n:"Champion",d:"Win a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.some(x=>x.place===1)},
+  {k:"sudoku1",emo:"🔢",n:"Number cruncher",d:"Solve a Sudoku",t:()=>!!GV&&(vSt("sudoku").wins||0)>=1},
+  {k:"sudokuhard",emo:"🧩",n:"Sudoku master",d:"Solve a Hard Sudoku",t:()=>!!GV&&((vSt("sudoku").lvWins||{}).hard||0)>=1}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -3291,7 +3293,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="9";
+const VG_VER="10";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3320,6 +3322,12 @@ const VGAMES=[
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#808080" stroke="#000"/><rect x="2" y="2" width="5.5" height="5.5" fill="#ffd800"/><rect x="8.5" y="2" width="5.5" height="5.5" fill="#ff8c00"/><rect x="2" y="8.5" width="5.5" height="5.5" fill="#e00000"/><rect x="8.5" y="8.5" width="5.5" height="5.5" fill="#fff"/><path d="M3.3 3.6h2.2v1.2H3.3v1.3h2.2M11.2 3.4v3M3.6 10l1.6-.5v3.4" fill="none" stroke="#000" stroke-width=".8"/></svg>',
     line:s=>s.best!=null?`Best: ${s.best.toLocaleString("en-US")}${s.top?` · top tile ${s.top}`:""}`:"Not played yet",
     lb:{head:"Best score",empty:"No 2048 scores yet.",board:s=>s.best!=null?{s:s.best,t:s.top||0}:null,row:x=>({k:[-x.s,-(x.t||0)],show:`${x.s.toLocaleString("en-US")} <span class="sub">(top tile ${x.t||"?"})</span>`})}},
+  {id:"sudoku",name:"Sudoku",blurb:"Fill the grid with 1 to 9. A new Daily puzzle every day, plus Easy, Medium and Hard.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M5.5.5v15M10.5.5v15M.5 5.5h15M.5 10.5h15" stroke="#000"/><path d="M2.3 1.9h1.6L2.6 4.4M7.2 6.9c.4-.4 1.6-.4 1.6.4 0 .7-1.6 1.4-1.6 2.1h1.8M12.3 12h1.6l-1 1.1c.7 0 1.1.4 1.1.9 0 .7-1.1.9-1.7.5" fill="none" stroke="#000080" stroke-width=".8"/></svg>',
+    line:s=>{const d=(s.days||{})[gmToday()];const b=s.bests||{},k=["hard","medium","easy"].find(x=>b[x]!=null);return d?`Today: solved in ${gmFmtT(d.ms)}`:k?`Best: ${gmFmtT(b[k])} (${k[0].toUpperCase()+k.slice(1)}) · today's puzzle is waiting`:"Today's puzzle is waiting"},
+    lb:{vars:[["daily","Today"],["easy","Easy"],["medium","Medium"],["hard","Hard"]],head:"Time",empty:{daily:"Nobody has solved today's puzzle yet. Be the first!",easy:"No times yet.",medium:"No times yet.",hard:"No times yet."},
+      board:s=>{const o={};["easy","medium","hard"].forEach(k=>{if(s.bests&&s.bests[k]!=null)o[k]=s.bests[k]});const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,ms:d.ms,mis:d.mis};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[x.d.ms],show:`${gmFmtT(x.d.ms)}${x.d.mis?` <span class="sub">(${x.d.mis} mistake${x.d.mis===1?"":"s"})</span>`:""}`}:null):x[v]!=null?{k:[x[v]],show:gmFmtT(x[v])}:null}},
   {id:"mines",name:"Minesweeper",blurb:"Clear the field without setting off a mine. The numbers tell you how many are next door.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#c0c0c0" stroke="#000"/><circle cx="8" cy="8.5" r="4" fill="#000"/><path d="M8 2.5v2M8 12.5v2M2 8.5h2M12 8.5h2M3.8 4.3l1.4 1.4M10.8 11.3l1.4 1.4M3.8 12.7l1.4-1.4M10.8 5.7l1.4-1.4" stroke="#000" stroke-width="1.3"/><rect x="6" y="6.5" width="1.6" height="1.6" fill="#fff"/></svg>',
     line:s=>{const b=s.bests||{},k=["exp","int","beg"].find(x=>b[x]!=null);return k?`Best: ${gmFmtT(b[k])} (${({beg:"Beginner",int:"Intermediate",exp:"Expert"})[k]})`:"Not played yet"},
