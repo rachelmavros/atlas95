@@ -3,7 +3,7 @@
 const W=320,H=480,GROUND=52,R=13,GAP=128,SPACING=176,PIPE=54;
 const CSS=`
 .fg-wrap{display:flex;flex-direction:column;align-items:center}
-.fg-screen{position:relative;width:min(100%,360px,calc((100vh - 230px)*.6667));min-width:220px;box-shadow:var(--sunken);padding:2px;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.fg-screen{position:relative;width:min(100%,360px,calc((100vh - 230px)*.6667));min-width:220px;box-shadow:var(--sunken);padding:2px;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
 .fg-screen canvas{display:block;width:100%;height:auto}
 .fg-msg{position:absolute;left:12px;right:12px;top:54%;text-align:center;pointer-events:none}
 .fg-msg[hidden]{display:none}
@@ -25,18 +25,18 @@ mount(api){
   function show(h){msg.innerHTML=h?`<div class="dlg"><div class="dlg-body">${h}</div></div>`:"";msg.hidden=!h}
   function status(){api.status(`Score: ${score}`,`Best: ${st.best||0}`)}
   function flap(){if(phase==="over"){if(performance.now()-dist>500)reset();return}
-    if(phase!=="run"){phase="run";show("");last=performance.now()}vy=-7.4;api.sound("tap")}
+    if(phase!=="run"){phase="run";show("");last=performance.now()}vy=-7.4}
   function spawn(){const lo=70,hi=H-GROUND-GAP-70;pipes.push({x:W+20,top:lo+Math.random()*(hi-lo),done:false})}
   function speed(){return 2.3+Math.min(score,40)*.025}
   // k = how many 60fps frames this step covers, so motion is the same speed on 60Hz and 120Hz screens
   function step(k){vy=Math.min(vy+.42*k,10);y+=vy*k;ang=Math.max(-.5,Math.min(1.2,vy/9));ground=(ground+speed()*k)%24;
     clouds.forEach(c=>{c.x-=c.s*.5*k;if(c.x<-60){c.x=W+30;c.y=30+Math.random()*180}});
     if(!pipes.length||pipes[pipes.length-1].x<W-SPACING)spawn();
-    pipes.forEach(p=>{p.x-=speed()*k;if(!p.done&&p.x+PIPE<W*.3-R){p.done=true;score++;api.sound("eat");status()}});
+    pipes.forEach(p=>{p.x-=speed()*k;if(!p.done&&p.x+PIPE<W*.3-R){p.done=true;score++;status()}});
     pipes=pipes.filter(p=>p.x>-PIPE-10);
     const bx=W*.3;if(y+R>H-GROUND||y-R<0)return over();
     for(const p of pipes){if(bx+R>p.x+3&&bx-R<p.x+PIPE-3&&(y-R<p.top||y+R>p.top+GAP))return over()}}
-  function over(){phase="over";dist=performance.now();api.sound("lose");
+  function over(){phase="over";dist=performance.now();setTimeout(()=>api.sound("lose"),0);
     const r=api.result(score?{score,text:`${score} gap${score===1?"":"s"}`,xp:Math.min(score*2,25)}:{});
     show(`<big>${score}</big><div>${score===1?"gap":"gaps"} cleared${r.best?" &middot; <b>New best!</b>":st.best?` &middot; Best: ${st.best}`:""}</div>${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<button class="btn default" type="button" data-fg="new">Play again</button>`);status()}
   function loop(){cancelAnimationFrame(raf);raf=requestAnimationFrame(function f(t){
