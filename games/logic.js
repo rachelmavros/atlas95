@@ -73,7 +73,10 @@ const CSS=`
 .lg-clues{background:var(--hi);box-shadow:var(--sunken);padding:8px 10px}
 .lg-clues ol{margin:0;padding-left:24px;display:flex;flex-direction:column;gap:4px}
 .lg-clues li{cursor:pointer;line-height:1.35}
-.lg-clues li.used{text-decoration:line-through;color:#808080}
+.lg-clues li>span{display:inline-flex;gap:8px;align-items:flex-start}
+.lg-ck{flex:0 0 16px;width:16px;height:16px;margin-top:1px;background:var(--hi);box-shadow:var(--sunken);display:inline-grid;place-items:center;font:700 13px/1 var(--ui);color:#008000}
+.lg-clues li.used .lg-tx{text-decoration:line-through;color:#808080}
+.lg-clues li:focus-visible{outline:1px dotted var(--ink)}
 .lg-grids{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .lg-t{border-collapse:collapse;background:var(--hi);box-shadow:var(--sunken)}
 .lg-t caption{font-weight:700;text-align:left;padding:0 0 3px}
@@ -89,7 +92,7 @@ const CSS=`
 .lg-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}`;
 A95G.logic={_t:{make,count,text,LV,THEMES},
 help:`<div>Read the story and the clues, then work out who goes with what. Every kid matches exactly one thing in each grid.</div>
-<ul class="factlist"><li>Tap a square once for <b style="color:#c00000">✗</b> (can't be), twice for <b style="color:#008000">✓</b> (it's this one), and a third time to clear it. A ✓ crosses out the rest of its row and column for you.</li><li>Tap a clue to cross it off once you've used it.</li><li>Clues like "the kid in red" mean whichever kid wore red, so you can link the grids together: if the kid in red has the dog, then whoever wore red and whoever has the dog are the same kid.</li><li>Fill in a ✓ for every kid in every grid to finish. Stuck? <b>Hint</b> shows a wrong mark, or fills in one answer.</li></ul>`,
+<ul class="factlist"><li>Tap a square once for <b style="color:#c00000">✗</b> (can't be), twice for <b style="color:#008000">✓</b> (it's this one), and a third time to clear it. A ✓ crosses out the rest of its row and column for you.</li><li>Tick a clue's checkbox once you've used it, so you know which ones are left.</li><li>Clues like "the kid in red" mean whichever kid wore red, so you can link the grids together: if the kid in red has the dog, then whoever wore red and whoever has the dog are the same kid.</li><li>Fill in a ✓ for every kid in every grid to finish. Stuck? <b>Hint</b> shows a wrong mark, or fills in one answer.</li></ul>`,
 mount(api){
   api.css(CSS);const st=api.stats;st.days=st.days||{};const mo=api.modeOpts();if(mo&&LV[mo.lv]&&mo.lv!=="daily")st.lv=mo.lv;st.lv=LV[st.lv]?st.lv:"daily";
   let G,hist=[],t0=0,tick=null,today=api.today(),bad=null;
@@ -106,11 +109,12 @@ mount(api){
   function status(){api.status(`${LV[G.lv].label} · ${api.fmtTime(elapsed())}`,`Hints: ${G.hints}${G.wrong?` · Wrong tries: ${G.wrong}`:""}`)}
   function render(){const P=G.P,T=THEMES[P.theme],cats=T.cats,qp=P.S[0].indexOf(P.q);
     api.root.innerHTML=`<div class="lg-wrap"><div class="lg-story"><h3>🔎 ${api.esc(T.title)}</h3><div>${api.esc(T.intro)}</div><div><b>The kids:</b> ${P.names.map(api.esc).join(", ")}</div><div class="lg-q">${G.done?api.esc(T.a(P.names[qp],P.vals[0][P.q])):api.esc(T.q(P.vals[0][P.q]))}</div></div>
-      <div class="lg-clues"><b>Clues</b> <span class="note">(tap one to cross it off)</span><ol>${P.clues.map((k,i)=>`<li data-cl="${i}" class="${G.used.includes(i)?"used":""}">${api.esc(text(P,k))}</li>`).join("")}</ol></div>
+      <div class="lg-clues"><b>Clues</b> <span class="note" id="lgdone">${clueNote()}</span><ol>${P.clues.map((k,i)=>{const u=G.used.includes(i);return `<li data-cl="${i}" class="${u?"used":""}" role="checkbox" aria-checked="${u}" tabindex="0"><span><span class="lg-ck" aria-hidden="true">${u?"✓":""}</span><span class="lg-tx">${api.esc(text(P,k))}</span></span></li>`}).join("")}</ol></div>
       <div class="lg-msg" aria-live="polite"></div>
       <div class="lg-grids">${P.S.map((_,c)=>`<table class="lg-t"><caption>${api.esc(cats[c].label)}</caption><thead><tr><th></th>${P.vals[c].map(v=>`<th class="lg-ch" scope="col">${api.esc(v)}</th>`).join("")}</tr></thead><tbody>${P.names.map((nm,p)=>`<tr><th class="lg-rh" scope="row">${api.esc(nm)}</th>${P.vals[c].map((v,vi)=>{const m=G.mk[c][p][vi];return `<td><button type="button" data-c="${c}" data-p="${p}" data-v="${vi}" class="${m===1?"x":m===2?"y":""}${bad&&bad.c===c&&bad.p===p&&bad.v===vi?" bad":""}" aria-label="${api.esc(nm)}, ${api.esc(v)}: ${m===1?"no":m===2?"yes":"unknown"}"${G.done?" disabled":""}>${m===1?"✗":m===2?"✓":""}</button></td>`}).join("")}</tr>`).join("")}</tbody></table>`).join("")}</div>
       <div class="lg-tools">${G.done?(G.lv==="daily"?`<button class="btn default" type="button" data-lg="share">Share...</button>`:`<button class="btn default" type="button" data-lg="new">Next puzzle</button>`):`<button class="btn" type="button" data-lg="undo">Undo</button><button class="btn" type="button" data-lg="hint">Hint</button><button class="btn" type="button" data-lg="clear">Clear marks</button>`}</div></div>`;
     newBtn.hidden=G.lv==="daily";status()}
+  const clueNote=()=>G.used.length?`(${G.used.length} of ${G.P.clues.length} checked off)`:"(check them off as you use them)";
   function say(t){const e=api.root.querySelector(".lg-msg");if(e)e.textContent=t}
   function cell(c,p,v){if(G.done)return;clock();hist.push(JSON.stringify(G.mk));if(hist.length>300)hist.shift();bad=null;
     const m=G.mk[c],nv=(m[p][v]+1)%3;m[p][v]=nv;
@@ -131,14 +135,17 @@ mount(api){
     const r=api.result(daily?{xp}:{xp,ch:{v:ms,text:api.fmtTime(ms),higher:false}});save();render();api.sound("win");
     say(`Solved in ${api.fmtTime(ms)}${G.hints?` with ${G.hints} hint${G.hints===1?"":"s"}`:" with no hints"}!${r.xp?` +${r.xp} XP`:""}`)}
   const onClick=e=>{const b=e.target.closest("[data-c]");if(b&&!b.disabled){cell(+b.dataset.c,+b.dataset.p,+b.dataset.v);return}
-    const li=e.target.closest("[data-cl]");if(li){const i=+li.dataset.cl;G.used=G.used.includes(i)?G.used.filter(x=>x!==i):[...G.used,i];li.classList.toggle("used");save();return}
+    const li=e.target.closest("[data-cl]");if(li){toggleClue(li);return}
     const t=e.target.closest("[data-lg]");if(!t)return;const k=t.dataset.lg;
     if(k==="new"){if(G.lv==="daily")return;stopClock();fresh();return}
     if(k==="undo"){if(G.done||!hist.length)return;G.mk=JSON.parse(hist.pop());bad=null;save();render();return}
     if(k==="clear"){if(G.done)return;hist.push(JSON.stringify(G.mk));G.mk=G.mk.map(m=>m.map(r=>r.map(()=>0)));bad=null;save();render();return}
     if(k==="hint"){hint();return}
     if(k==="share"){const d=st.days[today];if(d)api.share(`Atlas95 Logic Puzzle · ${api.niceDate(today)}\n🔎 ${THEMES[G.P.theme].title}: solved in ${api.fmtTime(d.ms)}${d.h?` (${d.h} hint${d.h===1?"":"s"})`:" with no hints"}`,t)}};
+  function toggleClue(li){const i=+li.dataset.cl,u=!G.used.includes(i);G.used=u?[...G.used,i]:G.used.filter(x=>x!==i);
+    li.classList.toggle("used",u);li.setAttribute("aria-checked",u);li.querySelector(".lg-ck").textContent=u?"✓":"";api.root.querySelector("#lgdone").textContent=clueNote();api.sound("tap");save()}
   api.on(api.root,"click",onClick);api.on(api.bar,"click",onClick);
+  api.on(api.root,"keydown",e=>{const li=e.target.closest&&e.target.closest("[data-cl]");if(li&&(e.key===" "||e.key==="Enter")){e.preventDefault();toggleClue(li)}});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-lglv]")){if(G&&!G.done)save();stopClock();st.lv=e.target.value;api.save();if(!load())fresh();else render()}});
   if(api.seeded()||!load())fresh();else{render();if(G.done&&G.lv==="daily")say("Today's puzzle is solved! Try Easy, Medium or Hard.")}
   return {pause(){if(t0){stopClock();save()}},unmount(){stopClock();if(G)save()}};
