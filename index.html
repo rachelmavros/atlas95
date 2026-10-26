@@ -2579,7 +2579,10 @@ const GM_BADGES=[
   {k:"sudoku1",emo:"🔢",n:"Number cruncher",d:"Solve a Sudoku",t:()=>!!GV&&(vSt("sudoku").wins||0)>=1},
   {k:"sudokuhard",emo:"🧩",n:"Sudoku master",d:"Solve a Hard Sudoku",t:()=>!!GV&&((vSt("sudoku").lvWins||{}).hard||0)>=1},
   {k:"lights10",emo:"💡",n:"Lights out!",d:"Reach level 10 in Lights Out",t:()=>!!GV&&(vSt("lights").maxLevel||0)>=10},
-  {k:"lightspar",emo:"🌟",n:"Electrician",d:"Solve 5 Lights Out levels at par",t:()=>!!GV&&(vSt("lights").perfect||0)>=5}];
+  {k:"lightspar",emo:"🌟",n:"Electrician",d:"Solve 5 Lights Out levels at par",t:()=>!!GV&&(vSt("lights").perfect||0)>=5},
+  {k:"quad4",emo:"🟩",n:"Four for four",d:"Solve all four words in a Daily Quad Word",t:()=>!!GV&&(vSt("quad").wins||0)>=1},
+  {k:"logic1",emo:"🔎",n:"Detective",d:"Solve a logic puzzle",t:()=>!!GV&&(vSt("logic").wins||0)>=1},
+  {k:"logichard",emo:"🕵️",n:"Master detective",d:"Solve a Hard logic puzzle with no hints",t:()=>!!GV&&(vSt("logic").hardClean||0)>=1}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -3295,7 +3298,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="11";
+const VG_VER="13";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3308,12 +3311,19 @@ const VG_LEVELS3=s=>{const r=s.rec;if(!r)return null;const o={h:vWins(r,"hard"),
 const VG_LEVELROW=x=>({k:[-(x.h||0),-(x.m||0),-(x.e||0)],show:`Hard ${x.h||0} &middot; Medium ${x.m||0} &middot; Easy ${x.e||0}`});
 const VG_MEMMODE={shapes:"shapes",flags:"flags",elements:"elements"};
 const VGAMES=[
-  {id:"word",name:"Daily Word",blurb:"Guess the 5-letter word in 6 tries. A new word every day.",icon:WORD16,
+  {id:"word",name:"Daily Word",blurb:"Guess the 5-letter word in 6 tries. A new word every day.",icon:WORD16,deps:["words5"],
     line:s=>{const d=(s.days||{})[gmToday()];return d?(d.won?`Today: solved in ${d.n}/6`:"Today: missed it")+(s.streak>1?` · 🔥 ${s.streak}`:""):"Today's word is waiting"},
     lb:{vars:[["today","Today"],["streak","Streaks"]],head:{today:"Guesses",streak:"Streak"},empty:{today:"Nobody has solved today's word yet. Be the first!",streak:"No Daily Word streaks yet."},
       board:s=>{const last=Object.keys(s.days||{}).sort().pop();if(!last)return null;const d=s.days[last];return {d:last,n:d.won?d.n:7,st:s.streak||0,mx:s.maxStreak||0}},
       row:(x,v,{t,y})=>{if(v==="streak"){const n=x.d&&y-gmDayNum(x.d)<=1?x.st||0:0;return n?{k:[-n,-(x.mx||0)],show:`${GM_FIRE} ${n} <span class="sub">(best ${x.mx||0})</span>`}:null}
         return x.d===t?{k:[x.n],show:x.n>6?"X/6":`${x.n}/6`}:null}}},
+  {id:"quad",name:"Quad Word",blurb:"Four words, nine guesses, every guess goes on all four boards. New daily puzzle.",deps:["words5"],
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="7" height="7" fill="#6aaa64" stroke="#000"/><rect x="8.5" y=".5" width="7" height="7" fill="#c9b458" stroke="#000"/><rect x=".5" y="8.5" width="7" height="7" fill="#787c7e" stroke="#000"/><rect x="8.5" y="8.5" width="7" height="7" fill="#6aaa64" stroke="#000"/><path d="M2.5 2.5h3M2.5 4h3M2.5 5.5h3M10.5 2.5h3M10.5 4h3M2.5 10.5h3M2.5 12h3M10.5 10.5h3M10.5 12h3M10.5 13.5h3" stroke="#fff" stroke-width=".7"/></svg>',
+    line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: ${d.n}/4 solved${s.streak>1?` · 🔥 ${s.streak}`:""}`:"Today's four words are waiting"},
+    lb:{vars:[["today","Today"],["streak","Streaks"]],head:{today:"Result",streak:"Streak"},empty:{today:"Nobody has played today's Quad Word yet. Be the first!",streak:"No Quad Word streaks yet."},
+      board:s=>{const last=Object.keys(s.days||{}).sort().pop();if(!last)return null;const d=s.days[last];return {d:last,n:d.n,g:d.rows.reduce((a,r)=>a+(r==null?10:r+1),0),st:s.streak||0,mx:s.maxStreak||0}},
+      row:(x,v,{t,y})=>{if(v==="streak"){const n=x.d&&y-gmDayNum(x.d)<=1?x.st||0:0;return n?{k:[-n,-(x.mx||0)],show:`${GM_FIRE} ${n} <span class="sub">(best ${x.mx||0})</span>`}:null}
+        return x.d===t?{k:[-x.n,x.g],show:`${x.n}/4 solved${x.n===4?` <span class="sub">(${x.g} total rows)</span>`:""}`}:null}}},
   {id:"snake",name:"Snake",blurb:"Eat the apples, grow longer, don't bite your tail.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#000"/><path d="M2.5 13.5h5v-5h-4v-5h8v6" fill="none" stroke="#00c000" stroke-width="2.2" stroke-linejoin="round"/><rect x="10.3" y="11" width="2.4" height="2.4" fill="#ff3030"/></svg>',
     lb:{head:"Best",empty:"No Snake scores yet.",board:s=>s.best!=null?s.best:null,row:x=>({k:[-x],show:`${x} apple${x===1?"":"s"}`})}},
@@ -3324,6 +3334,12 @@ const VGAMES=[
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#808080" stroke="#000"/><rect x="2" y="2" width="5.5" height="5.5" fill="#ffd800"/><rect x="8.5" y="2" width="5.5" height="5.5" fill="#ff8c00"/><rect x="2" y="8.5" width="5.5" height="5.5" fill="#e00000"/><rect x="8.5" y="8.5" width="5.5" height="5.5" fill="#fff"/><path d="M3.3 3.6h2.2v1.2H3.3v1.3h2.2M11.2 3.4v3M3.6 10l1.6-.5v3.4" fill="none" stroke="#000" stroke-width=".8"/></svg>',
     line:s=>s.best!=null?`Best: ${s.best.toLocaleString("en-US")}${s.top?` · top tile ${s.top}`:""}`:"Not played yet",
     lb:{head:"Best score",empty:"No 2048 scores yet.",board:s=>s.best!=null?{s:s.best,t:s.top||0}:null,row:x=>({k:[-x.s,-(x.t||0)],show:`${x.s.toLocaleString("en-US")} <span class="sub">(top tile ${x.t||"?"})</span>`})}},
+  {id:"logic",name:"Logic Puzzles",blurb:"Who swiped the apples? Read the clues and mark the grid until only one answer fits.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M.5 5.5h15M.5 10.5h15M5.5.5v15M10.5.5v15" stroke="#808080"/><path d="M1.8 1.8l2.4 2.4M4.2 1.8L1.8 4.2M12 3.2l1 1 2-2.2M6.8 6.8l2.4 2.4M9.2 6.8L6.8 9.2M7 13l1 1 2-2.2" fill="none" stroke-width="1.1"/><path d="M1.8 1.8l2.4 2.4M4.2 1.8L1.8 4.2M6.8 6.8l2.4 2.4M9.2 6.8L6.8 9.2" stroke="#c00000" stroke-width="1.1"/><path d="M12 3.2l1 1 2-2.2M7 13l1 1 2-2.2" fill="none" stroke="#008000" stroke-width="1.2"/></svg>',
+    line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: solved in ${gmFmtT(d.ms)}`:s.wins?`${s.wins} solved · today's mystery is waiting`:"Today's mystery is waiting"},
+    lb:{vars:[["daily","Today"],["solved","Most solved"]],head:{daily:"Time",solved:"Puzzles"},empty:{daily:"Nobody has cracked today's mystery yet. Be the first!",solved:"No puzzles solved yet."},
+      board:s=>{const o={};if(s.wins)o.n=s.wins;const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,ms:d.ms,h:d.h};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[x.d.ms],show:`${gmFmtT(x.d.ms)}${x.d.h?` <span class="sub">(${x.d.h} hint${x.d.h===1?"":"s"})</span>`:""}`}:null):x.n?{k:[-x.n],show:`${x.n} solved`}:null}},
   {id:"lights",name:"Lights Out",blurb:"Tap a light to flip it and its neighbors. Can you turn them all off?",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#202020" stroke="#000"/><g stroke="#000" stroke-width=".4"><rect x="2" y="2" width="3.4" height="3.4" fill="#ffe14a"/><rect x="6.3" y="2" width="3.4" height="3.4" fill="#444"/><rect x="10.6" y="2" width="3.4" height="3.4" fill="#ffe14a"/><rect x="2" y="6.3" width="3.4" height="3.4" fill="#444"/><rect x="6.3" y="6.3" width="3.4" height="3.4" fill="#ffe14a"/><rect x="10.6" y="6.3" width="3.4" height="3.4" fill="#444"/><rect x="2" y="10.6" width="3.4" height="3.4" fill="#ffe14a"/><rect x="6.3" y="10.6" width="3.4" height="3.4" fill="#444"/><rect x="10.6" y="10.6" width="3.4" height="3.4" fill="#ffe14a"/></g></svg>',
     line:s=>{const d=(s.days||{})[gmToday()];return `${s.maxLevel?`Reached level ${s.maxLevel}`:"Start at level 1"}${d?` · today: ${d.m} taps`:" · daily puzzle waiting"}`},
@@ -3387,9 +3403,11 @@ const vXPToday=()=>GV.xpd.d===gmToday()?GV.xpd.n:0;
 function vXP(n){const room=Math.max(0,VG_XPCAP-vXPToday()),add=Math.min(Math.round(n),room);if(add<=0)return 0;GV.xpd={d:gmToday(),n:vXPToday()+add};gmAddXP(add);gmSave();return add}
 const vEl=id=>document.getElementById(id);
 const VDLG=vEl("vdialog");
-function vLoad(id){if(A95G[id])return Promise.resolve();if(GV.loading[id])return GV.loading[id];
-  return GV.loading[id]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=`games/${id}.js?v=${VG_VER}`;
-    s.onload=()=>A95G[id]?res():rej(new Error("not registered"));s.onerror=()=>{delete GV.loading[id];s.remove();rej(new Error("load failed"))};document.head.appendChild(s)})}
+// a game file, after any shared files it lists in its VGAMES entry (deps)
+function vScript(name){GV.files=GV.files||{};if(GV.files[name])return GV.files[name];
+  return GV.files[name]=new Promise((res,rej)=>{const s=document.createElement("script");s.src=`games/${name}.js?v=${VG_VER}`;s.onload=res;s.onerror=()=>{delete GV.files[name];s.remove();rej(new Error("load failed"))};document.head.appendChild(s)})}
+function vLoad(id){if(A95G[id])return Promise.resolve();if(GV.loading[id])return GV.loading[id];const deps=(VGAMES.find(x=>x.id===id)||{}).deps||[];
+  return GV.loading[id]=(async()=>{for(const d of deps)await vScript(d);await vScript(id);if(!A95G[id])throw new Error("not registered")})().catch(e=>{delete GV.loading[id];throw e})}
 function vApi(g){
   const offs=[],st=vSt(g.id);
   return {id:g.id,root:vEl("vgroot"),bar:vEl("vgbar"),stats:st,save:vSave,

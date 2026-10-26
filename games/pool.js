@@ -7,12 +7,19 @@ const LEVELS={easy:{label:"Easy",err:3.2,think:4},medium:{label:"Medium",err:1.2
 const MODES={easy:"vs Computer: Easy",medium:"vs Computer: Medium",hard:"vs Computer: Hard","2p":"2 players",solo:"Solo: clear the table"};
 const CSS=`
 .pl-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
-.pl-hud{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;font-weight:700;min-height:1.5em;text-align:center}
+.pl-hud{display:flex;gap:4px 8px;align-items:center;justify-content:center;flex-wrap:wrap;font-weight:700;min-height:3.4em;text-align:center}
 .pl-side{display:flex;gap:2px;align-items:center;font-weight:400;font-size:12px;background:var(--hi);box-shadow:var(--sunken);padding:2px 6px}
 .pl-side.on{background:var(--tip);font-weight:700}
 .pl-side i{width:11px;height:11px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1px #000}
-.pl-table{position:relative;width:min(100%,780px);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.pl-table canvas{display:block;width:100%;height:auto;cursor:crosshair}`;
+.pl-table{position:relative;display:flex;justify-content:center;width:min(100%,780px);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pl-table canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.pl-ctl{display:flex;gap:6px;align-items:center;width:min(100%,560px)}
+.pl-ctl .btn{min-height:44px;min-width:44px;padding:0;font-size:16px}
+.pl-pw{position:relative;flex:1;height:44px;background:var(--hi);box-shadow:var(--sunken);touch-action:none;cursor:ew-resize;user-select:none;-webkit-user-select:none}
+.pl-pw i{position:absolute;left:3px;top:3px;bottom:3px;width:0;background:linear-gradient(90deg,#ffd800,#ff8c00 70%,#e00000)}
+.pl-pw b{position:absolute;top:2px;bottom:2px;width:14px;left:0;background:var(--face);box-shadow:var(--raised)}
+.pl-pw span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#404040;pointer-events:none}
+.pl-pw.off{opacity:.5;cursor:default}`;
 // ---------- physics (pure: works on a world object, also used by the computer to test shots) ----------
 function rack(rnd=Math.random){const balls=[{n:0,x:L*.25,y:WD/2,vx:0,vy:0,in:false}];
   // triangle with the 8 in the middle, a solid and a stripe in the back corners
@@ -41,38 +48,39 @@ const api0shuffle=(a,rnd)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Ma
 const isSolid=n=>n>=1&&n<=7,isStripe=n=>n>=9;
 const inGroup=(n,g)=>g==="solid"?isSolid(n):g==="stripe"?isStripe(n):false;
 A95G.pool={
-help:`<div><b>Aim:</b> press anywhere on the table and pull back, away from where you want the white ball to go, like a slingshot. The farther you pull, the harder the shot. Let go to shoot. (Pull back only a little and let go to cancel.)</div>
+help:`<div><b>Aim:</b> touch or drag on the table. The cue points from the white ball toward your finger, and the dotted line shows where the white ball will go. Use <b>◀ ▶</b> (or the arrow keys) to fine-tune.</div><div><b>Shoot:</b> drag the <b>power bar</b> under the table to the right, then let go. The farther right, the harder the shot. (On a computer you can also press Space to shoot at the power shown.)</div>
 <ul class="factlist"><li><b>8-ball:</b> the first ball you sink makes you <b>solids</b> (1 to 7) or <b>stripes</b> (9 to 15). Sink all of yours, then the black 8 to win.</li><li>Sinking one of your own balls gives you another turn.</li><li><b>Fouls</b> (sinking the white ball, missing everything, or hitting the other player's ball first) give the other side <b>ball in hand</b>: they can drag the white ball anywhere.</li><li>Sinking the 8 early, or fouling while you sink it, loses the game.</li><li><b>Solo:</b> sink all 15 in as few shots as you can. Sinking the white ball costs an extra shot.</li></ul>`,
 mount(api){
   api.css(CSS);const st=api.stats;const mo=api.modeOpts();if(mo&&MODES[mo.mode])st.mode=mo.mode;st.mode=MODES[st.mode]?st.mode:"medium";st.rec=st.rec||{};
   let W,turn,groups,phase,inHand,isBreak,shots,winner,aim=null,place=null,raf=0,aiT=null,msg="",portrait=false,s=1,dpr=1,lastT=0;
   api.bar.innerHTML=`<button class="btn" type="button" data-pl="new">New game</button><select class="sel95" data-plmode aria-label="Mode">${Object.entries(MODES).map(([k,v])=>`<option value="${k}"${st.mode===k?" selected":""}>${v}</option>`).join("")}</select>`;
-  api.root.innerHTML=`<div class="pl-wrap"><div class="pl-hud" aria-live="polite"></div><div class="pl-table"><canvas aria-label="Pool table"></canvas></div><div class="note" id="plnote"></div></div>`;
+  api.root.innerHTML=`<div class="pl-wrap"><div class="pl-hud" aria-live="polite"></div><div class="pl-table"><canvas aria-label="Pool table"></canvas></div><div class="pl-ctl"><button class="btn" type="button" data-plnudge="-1" aria-label="Turn aim left">◀</button><div class="pl-pw" role="slider" aria-label="Shot power: drag right, then let go to shoot" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><i></i><b></b><span>Drag right for power, let go to shoot</span></div><button class="btn" type="button" data-plnudge="1" aria-label="Turn aim right">▶</button></div><div class="note" id="plnote"></div></div>`;
   const cv=api.root.querySelector("canvas"),cx=cv.getContext("2d"),hud=api.root.querySelector(".pl-hud"),note=api.root.querySelector("#plnote"),holder=api.root.querySelector(".pl-table");
   const vsAI=()=>LEVELS[st.mode]!=null,solo=()=>st.mode==="solo";
   const name=t=>solo()?"You":vsAI()?(t===0?"You":"Computer"):`Player ${t+1}`,whose=t=>name(t)==="You"?"Your":`${name(t)}'s`;
   // ---- sizing: on narrow screens the table stands upright ----
+  // the table shrinks to leave room below it for the aim and power controls, status bar and taskbar
   function size(){portrait=(holder.clientWidth||innerWidth)<560;const cssW=Math.min(holder.clientWidth||600,780);const lw=portrait?WD+2*RAIL:L+2*RAIL,lh=portrait?L+2*RAIL:WD+2*RAIL;
-    let w=cssW,h=cssW*lh/lw;const maxH=Math.max(260,(innerHeight||800)-Math.max(0,holder.getBoundingClientRect().top)-70);if(h>maxH){h=maxH;w=h*lw/lh}
+    let w=cssW,h=cssW*lh/lw;const maxH=Math.max(240,(innerHeight||800)-Math.max(0,holder.getBoundingClientRect().top)-100);if(h>maxH){h=maxH;w=h*lw/lh}
     dpr=Math.min(2,window.devicePixelRatio||1);cv.style.width=w+"px";cv.style.height=h+"px";cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);s=w/lw}
   function setT(){if(portrait)cx.setTransform(0,-s*dpr,s*dpr,0,s*dpr*RAIL,s*dpr*(L+RAIL));else cx.setTransform(s*dpr,0,0,s*dpr,s*dpr*RAIL,s*dpr*RAIL)}
   function toTable(e){const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/s,py=(e.clientY-r.top)/s;return portrait?{x:L+RAIL-py,y:px-RAIL}:{x:px-RAIL,y:py-RAIL}}
   // ---- game flow ----
   function newGame(){cancelAnimationFrame(raf);clearTimeout(aiT);W=rack(api.begin({mode:st.mode}));turn=0;groups=[null,null];phase="aim";inHand=false;isBreak=true;shots=0;winner=null;aim=null;place=null;note.textContent="";
-    size();say(solo()?"Break! Sink all 15 balls.":vsAI()?"Your break. Pull back from the table to aim.":"Player 1 breaks.");draw();status()}
+    say(solo()?"Break! Sink all 15 balls.":vsAI()?"Your break. Aim on the table, then drag the power bar.":"Player 1 breaks.");size();readyAim();status()}
   function say(t){msg=t;renderHud()}
   function renderHud(){const left=g=>W.balls.filter(b=>!b.in&&inGroup(b.n,g)).map(b=>b.n);
     const side=t=>{const g=groups[t];return `<span class="pl-side${turn===t&&phase!=="over"?" on":""}">${api.esc(name(t))}${g?`: ${g}s ${left(g).map(n=>`<i style="background:${COLORS[n>8?n-8:n]};${n>8?"background-image:linear-gradient(#fff 30%,transparent 30% 70%,#fff 70%)":""}"></i>`).join("")||"→ 8"}`:""}</span>`};
     hud.innerHTML=solo()?`<span class="pl-side on">Shots: ${shots} &middot; Left: ${W.balls.filter(b=>b.n&&!b.in).length}</span> <span>${api.esc(msg)}</span>`:`${side(0)}${side(1)}<span>${api.esc(msg)}</span>`}
   function status(){const r=vsAI()?st.rec[st.mode]:null;api.status(solo()?`Solo · ${shots} shots`:vsAI()?`${LEVELS[st.mode].label}: won ${r?r.w:0}, lost ${r?r.l:0}`:"2 players",solo()&&st.solo!=null?`Best: ${st.solo} shots`:"")}
-  function shoot(ang,pow){if(pow<.04)return;strike(W,ang,pow);phase="moving";inHand=false;place=null;aim=null;shots++;api.sound("drop");lastT=performance.now();raf=requestAnimationFrame(run)}
+  function shoot(ang,pow){if(pow<.04)return;bar.classList.add("off");strike(W,ang,pow);phase="moving";inHand=false;place=null;aim=null;shots++;api.sound("drop");lastT=performance.now();raf=requestAnimationFrame(run)}
   function run(t){const steps=Math.min(40,Math.max(1,Math.round((t-lastT)/1000/DT)));lastT=t;for(let i=0;i<steps&&moving(W);i++)stepWorld(W,DT);
     draw();if(moving(W)){raf=requestAnimationFrame(run);return}settle()}
   function cueBack(){const c=W.balls[0];c.in=false;c.vx=c.vy=0;c.x=L*.25;c.y=WD/2;while(W.balls.some(b=>b.n&&!b.in&&Math.hypot(b.x-c.x,b.y-c.y)<2*R+.1))c.y+=R*2.2}
   function settle(){const ev=W.ev,potted=ev.pocketed.filter(n=>n),scratch=ev.pocketed.includes(0);if(potted.length||scratch)api.sound(scratch?"lose":"ding");
     if(solo()){if(scratch){shots++;cueBack();inHand=true}
       if(W.balls.every(b=>!b.n||b.in)){finishSolo();return}
-      say(scratch?"Scratch! +1 shot. Drag the white ball anywhere.":potted.length?`Nice! ${potted.length>1?potted.length+" balls":"Ball"} down.`:"Keep going.");phase="aim";isBreak=false;draw();status();return}
+      say(scratch?"Scratch! +1 shot. Drag the white ball anywhere.":potted.length?`Nice! ${potted.length>1?potted.length+" balls":"Ball"} down.`:"Keep going.");phase="aim";isBreak=false;readyAim();status();return}
     const me=turn,g=groups[me],clearedBefore=g&&W.balls.every(b=>!inGroup(b.n,g)||(b.in&&!potted.includes(b.n)));
     let foul=scratch||ev.first==null;if(!foul){if(g)foul=clearedBefore?ev.first!==8:!inGroup(ev.first,g);else foul=ev.first===8}
     let why=scratch?"Scratch":ev.first==null?"No ball hit":foul?(g&&clearedBefore?"Must hit the 8 first":"Hit the wrong ball first"):"";
@@ -83,7 +91,7 @@ mount(api){
     if(scratch)cueBack();isBreak=false;
     if(foul){turn=1-me;inHand=true;say(`${why}! ${name(turn)} ${turn===0&&vsAI()?"have":"has"} ball in hand.`)}
     else if(!mine){turn=1-me;say(`${whose(turn)} turn.`)}else say(`${name(me)} ${me===0&&vsAI()?"go":"goes"} again.`);
-    phase="aim";draw();status();if(vsAI()&&turn===1)aiTurn()}
+    phase="aim";readyAim();status();if(vsAI()&&turn===1)aiTurn()}
   function end(w,why){phase="over";winner=w;draw();
     if(vsAI()){const r=st.rec[st.mode]||(st.rec[st.mode]={w:0,l:0});if(w===0){r.w++;if(st.mode==="hard")st.hardW=(st.hardW||0)+1}else r.l++;st.w=(st.w||0)+(w===0?1:0);st.l=(st.l||0)+(w===1?1:0)}
     const res=api.result({xp:vsAI()?(w===0?({easy:8,medium:15,hard:25})[st.mode]:3):3});api.sound(w===0||!vsAI()?"win":"lose");
@@ -129,25 +137,40 @@ mount(api){
       // cue stick behind the ball
       const back=4+aim.pow*22;cx.strokeStyle="#d9b77a";cx.lineWidth=1.4;cx.beginPath();cx.moveTo(c.x-Math.cos(aim.ang)*(R+back),c.y-Math.sin(aim.ang)*(R+back));cx.lineTo(c.x-Math.cos(aim.ang)*(R+back+60),c.y-Math.sin(aim.ang)*(R+back+60));cx.stroke();cx.restore()}
     for(const b of W.balls)if(!b.in)ball(b);
-    if(inHand&&phase==="aim"&&!(vsAI()&&turn===1)){cx.save();cx.strokeStyle="#ffd800";cx.lineWidth=.6;cx.setLineDash([1.2,1.2]);cx.beginPath();cx.arc(c.x,c.y,R+1.6,0,Math.PI*2);cx.stroke();cx.restore()}
-    if(aim&&!aim.ai){cx.save();cx.setTransform(dpr,0,0,dpr,0,0);const w=cv.width/dpr,bw=Math.min(160,w*.4);cx.fillStyle="rgba(0,0,0,.55)";cx.fillRect(8,8,bw+4,14);cx.fillStyle=aim.pow>.85?"#ff4040":"#ffd800";cx.fillRect(10,10,bw*aim.pow,10);cx.fillStyle="#fff";cx.font="700 11px Tahoma,sans-serif";cx.fillText(`Power ${Math.round(aim.pow*100)}%`,14+bw,19);cx.restore()}}
+    if(inHand&&phase==="aim"&&!(vsAI()&&turn===1)){cx.save();cx.strokeStyle="#ffd800";cx.lineWidth=.6;cx.setLineDash([1.2,1.2]);cx.beginPath();cx.arc(c.x,c.y,R+1.6,0,Math.PI*2);cx.stroke();cx.restore()}}
   function dot(x,y,r){cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.fill()}
   function ball(b){const col=COLORS[b.n>8?b.n-8:b.n];cx.save();cx.beginPath();cx.arc(b.x,b.y,R,0,Math.PI*2);cx.clip();
     cx.fillStyle=b.n>8?"#fff":col;cx.fillRect(b.x-R,b.y-R,2*R,2*R);if(b.n>8){cx.fillStyle=col;cx.fillRect(b.x-R,b.y-R*.55,2*R,R*1.1)}
     cx.fillStyle="rgba(255,255,255,.35)";cx.beginPath();cx.arc(b.x-R*.35,b.y-R*.4,R*.35,0,Math.PI*2);cx.fill();cx.restore();
     cx.strokeStyle="rgba(0,0,0,.6)";cx.lineWidth=.25;cx.beginPath();cx.arc(b.x,b.y,R,0,Math.PI*2);cx.stroke();
     if(b.n){cx.fillStyle="#fff";cx.beginPath();cx.arc(b.x,b.y,R*.48,0,Math.PI*2);cx.fill();cx.save();cx.translate(b.x,b.y);if(portrait)cx.rotate(Math.PI/2);cx.fillStyle="#000";cx.font=`700 ${R*.62}px Tahoma,sans-serif`;cx.textAlign="center";cx.textBaseline="middle";cx.fillText(b.n,0,R*.04);cx.restore()}}
-  // ---- input: drag the white ball when it's in hand, otherwise pull back to aim ----
+  // ---- input: touch the table to aim (or drag the white ball when it's in hand); the power bar shoots ----
   const myTurn=()=>phase==="aim"&&!(vsAI()&&turn===1);
+  let aimAng=0,pw=null;const bar=api.root.querySelector(".pl-pw");
+  // point at the nearest ball you're allowed to hit, so every turn starts with a sensible aim
+  function readyAim(){if(!myTurn()){aim=null;bar.classList.add("off");return}const c=W.balls[0],ts=solo()?live(W).filter(b=>b.n):legalTargets(turn);
+    const t=ts.sort((a,b)=>Math.hypot(a.x-c.x,a.y-c.y)-Math.hypot(b.x-c.x,b.y-c.y))[0];aimAng=t?Math.atan2(t.y-c.y,t.x-c.x):0;aim={ang:aimAng,pow:0};bar.classList.remove("off");setPow(0);draw()}
+  function setPow(v){if(aim)aim.pow=v;bar.querySelector("i").style.width=`calc(${v*100}% - ${v*6}px)`;bar.querySelector("b").style.left=`calc(${v*100}% - ${v*14}px)`;bar.setAttribute("aria-valuenow",Math.round(v*100));bar.querySelector("span").style.display=v?"none":""}
   api.on(cv,"pointerdown",e=>{if(!myTurn()||e.button>0)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}const p=toTable(e),c=W.balls[0];
-    if(inHand&&Math.hypot(p.x-c.x,p.y-c.y)<R*3.2){place={dx:c.x-p.x,dy:c.y-p.y};return}aim={x0:p.x,y0:p.y,ang:aim?aim.ang:0,pow:0};draw()});
-  api.on(cv,"pointermove",e=>{const p=toTable(e);
+    if(inHand&&Math.hypot(p.x-c.x,p.y-c.y)<R*3.2){place={dx:c.x-p.x,dy:c.y-p.y};return}place=null;aimAt(p)});
+  function aimAt(p){const c=W.balls[0];if(Math.hypot(p.x-c.x,p.y-c.y)<R*.8)return;aimAng=Math.atan2(p.y-c.y,p.x-c.x);aim={ang:aimAng,pow:aim?aim.pow:0};draw()}
+  api.on(cv,"pointermove",e=>{if(!myTurn())return;const p=toTable(e);
     if(place){const c=W.balls[0],x=Math.max(R,Math.min(L-R,p.x+place.dx)),y=Math.max(R,Math.min(WD-R,p.y+place.dy));if(!W.balls.some(b=>b.n&&!b.in&&Math.hypot(b.x-x,b.y-y)<2*R+.1)){c.x=x;c.y=y}draw();return}
-    if(!aim||aim.ai)return;const c=W.balls[0],dx=aim.x0-p.x,dy=aim.y0-p.y,d=Math.hypot(dx,dy);
-    // pull back: shoot away from the finger; before the pull starts, point from the ball toward the finger
-    if(d>2){aim.ang=Math.atan2(dy,dx);aim.pow=Math.min(1,d/55)}else{aim.ang=Math.atan2(p.y-c.y,p.x-c.x);aim.pow=0}draw()});
-  const release=()=>{if(place){place=null;return}if(!aim||aim.ai)return;const a=aim;aim=null;if(a.pow>=.04)shoot(a.ang,a.pow);else draw()};
-  api.on(cv,"pointerup",release);api.on(cv,"pointercancel",()=>{aim=null;place=null;draw()});api.on(cv,"touchmove",e=>e.preventDefault(),{passive:false});
+    if(e.buttons||e.pointerType!=="mouse")aimAt(p)});
+  api.on(cv,"pointerup",()=>{place=null});api.on(cv,"pointercancel",()=>{place=null});api.on(cv,"touchmove",e=>e.preventDefault(),{passive:false});
+  // power bar: the farther right you drag, the harder the shot; letting go shoots
+  const powAt=e=>{const r=bar.getBoundingClientRect();return Math.max(0,Math.min(1,(e.clientX-r.left-7)/(r.width-14)))};
+  api.on(bar,"pointerdown",e=>{if(!myTurn()||e.button>0)return;e.preventDefault();try{bar.setPointerCapture(e.pointerId)}catch(_){}pw={x0:e.clientX};setPow(0);draw()});
+  api.on(bar,"pointermove",e=>{if(!pw)return;setPow(powAt(e));draw()});
+  api.on(bar,"pointerup",()=>{if(!pw)return;pw=null;const v=aim?aim.pow:0;if(v>=.04){aim=null;setPow(0);shoot(aimAng,v)}else{setPow(0);draw()}});
+  api.on(bar,"pointercancel",()=>{pw=null;setPow(0);draw()});api.on(bar,"touchmove",e=>e.preventDefault(),{passive:false});
+  // fine-tune: tap for a small turn, hold to keep turning
+  let nudgeT=null;const nudge=d=>{if(!myTurn())return;aimAng+=d*.004;aim={ang:aimAng,pow:aim?aim.pow:0};draw()};
+  api.on(api.root,"pointerdown",e=>{const b=e.target.closest("[data-plnudge]");if(!b)return;const d=+b.dataset.plnudge;nudge(d);clearInterval(nudgeT);let k=0;nudgeT=setInterval(()=>nudge(d*(++k>10?3:1)),60)});
+  ["pointerup","pointercancel","pointerleave"].forEach(t=>api.on(api.root,t,()=>clearInterval(nudgeT)));
+  api.on(document,"keydown",e=>{if(!api.active()||!myTurn()||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();nudge((e.key==="ArrowRight"||e.key==="ArrowDown"?1:-1)*(e.shiftKey?10:1));return}
+    if(e.key===" "||e.key==="Enter"){const v=aim&&aim.pow>=.04?aim.pow:.5;e.preventDefault();aim=null;setPow(0);shoot(aimAng,v)}});
   api.on(api.bar,"click",e=>{if(e.target.closest("[data-pl=new]"))newGame()});
   api.on(note,"click",e=>{if(e.target.closest("[data-pl=new]"))newGame()});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-plmode]")){st.mode=e.target.value;api.save();newGame()}});

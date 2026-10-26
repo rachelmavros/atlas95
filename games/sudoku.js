@@ -19,13 +19,13 @@ function make(rnd,lv){const sol=solved(rnd),p=Int8Array.from(sol),order=[...Arra
 const CSS=`
 .sd-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
 .sd-msg{min-height:1.4em;font-weight:700;text-align:center}
-.sd-grid{display:grid;grid-template-columns:repeat(9,1fr);width:min(100%,460px,calc(100vh - 330px));min-width:250px;aspect-ratio:1;background:#000;padding:2px;gap:1px;box-shadow:var(--sunken);user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.sd-c{border:0;padding:0;background:#fff;font:700 clamp(16px,4.6vw,24px)/1 var(--ui);color:#000080;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;min-width:0;min-height:0}
+.sd-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));grid-template-rows:repeat(9,minmax(0,1fr));width:min(100%,460px,calc(100vh - 330px));min-width:250px;aspect-ratio:1;background:#000;padding:2px;gap:1px;box-shadow:var(--sunken);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.sd-c{border:0;padding:0;background:#fff;font:700 clamp(16px,4.6vw,24px)/1 var(--ui);color:#000080;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;min-width:0;min-height:0;overflow:hidden}
 .sd-c.g{color:#000}
 .sd-c.br{margin-right:2px}.sd-c.bb{margin-bottom:2px}
 .sd-c.peer{background:#e8eef8}.sd-c.same{background:#c8d8f0}.sd-c.sel{background:#ffe680}
 .sd-c.bad{color:#d00000;background:#ffd6d6}.sd-c.sel.bad{background:#ffb0b0}
-.sd-c .n{position:absolute;inset:1px;display:grid;grid-template-columns:repeat(3,1fr);font:400 clamp(7px,1.8vw,10px)/1 var(--ui);color:#505050}
+.sd-c .n{position:absolute;inset:1px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));font:400 clamp(7px,1.8vw,10px)/1 var(--ui);color:#505050}
 .sd-c .n i{font-style:normal;display:flex;align-items:center;justify-content:center}
 .sd-c:focus-visible{outline:2px solid #000080;outline-offset:-2px;z-index:1}
 .sd-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:min(100%,460px)}
