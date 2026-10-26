@@ -37,10 +37,10 @@ mount(api){
     if(f.R<45){say("Too small","Draw a bigger circle");api.sound("lose");return}
     if(Math.abs(turn)<Math.PI*2*.9){say("Keep going","Draw all the way around the dot");api.sound("lose");return}
     const s=Math.round(f.score*10)/10;st.hist.unshift(s);st.hist=st.hist.slice(0,6);
-    const r=api.result({score:s,text:s.toFixed(1)+"%",xp:s>=95?10:s>=90?6:s>=80?3:1});
+    const r=api.result({score:s,text:s.toFixed(1)+"%",xp:s>=95?10:s>=90?6:s>=80?3:1,ch:{v:s,text:s.toFixed(1)+"%",higher:true}});
     const word=s>=97?"Flawless!":s>=93?"Amazing!":s>=88?"Great circle!":s>=80?"Nice!":s>=65?"Not bad":"Wobbly...";
     say(`${s.toFixed(1)}%`,r.best?"New best!":word);api.sound(s>=90?"win":"ding");showHist()}
-  api.on(cv,"pointerdown",e=>{if(e.button>0)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}drawing=true;pts=[toXY(e)];turn=0;lastA=Math.atan2(pts[0][1]-C,pts[0][0]-C);say(null);paint()});
+  api.on(cv,"pointerdown",e=>{if(e.button>0)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}drawing=true;api.begin({});pts=[toXY(e)];turn=0;lastA=Math.atan2(pts[0][1]-C,pts[0][0]-C);say(null);paint()});
   api.on(cv,"pointermove",e=>{if(!drawing)return;const p=toXY(e),q=pts[pts.length-1];if(Math.hypot(p[0]-q[0],p[1]-q[1])<2)return;
     if(Math.hypot(p[0]-C,p[1]-C)<18){drawing=false;paint();say("Too close","Stay away from the dot");api.sound("lose");return}
     const a=Math.atan2(p[1]-C,p[0]-C);let d=a-lastA;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;turn+=d;lastA=a;pts.push(p);

@@ -18,15 +18,15 @@ mount(api){
   api.bar.innerHTML=`<button class="btn" type="button" data-fg="new">New game</button>`;
   api.root.innerHTML=`<div class="fg-wrap"><div class="fg-screen" role="button" tabindex="0" aria-label="Flap"><canvas width="${W*2}" height="${H*2}"></canvas><div class="fg-msg"></div></div></div>`;
   const cv=api.root.querySelector("canvas"),cx=cv.getContext("2d"),msg=api.root.querySelector(".fg-msg"),screen=api.root.querySelector(".fg-screen");cx.scale(2,2);
-  let y,vy,pipes,score,phase,raf=null,last=0,dist,ang,ground=0,clouds;
-  function reset(){y=H*.42;vy=0;pipes=[];score=0;dist=0;ang=0;phase="ready";
+  let y,vy,pipes,score,phase,raf=null,last=0,dist,ang,ground=0,clouds,rnd=Math.random;
+  function reset(){rnd=api.begin({});y=H*.42;vy=0;pipes=[];score=0;dist=0;ang=0;phase="ready";
     clouds=[...Array(5)].map((_,i)=>({x:i*80+Math.random()*40,y:30+Math.random()*180,s:.6+Math.random()*.7}));
     show(`<big>Flappy Globe</big><div>${matchMedia("(pointer:fine)").matches?"Click or press Space to flap":"Tap to flap"}</div>${st.best?`<div class="note">Best: ${st.best}</div>`:""}`);status();draw();loop()}
   function show(h){msg.innerHTML=h?`<div class="dlg"><div class="dlg-body">${h}</div></div>`:"";msg.hidden=!h}
   function status(){api.status(`Score: ${score}`,`Best: ${st.best||0}`)}
   function flap(){if(phase==="over"){if(performance.now()-dist>500)reset();return}
     if(phase!=="run"){phase="run";show("");last=performance.now()}vy=-7.4}
-  function spawn(){const lo=70,hi=H-GROUND-GAP-70;pipes.push({x:W+20,top:lo+Math.random()*(hi-lo),done:false})}
+  function spawn(){const lo=70,hi=H-GROUND-GAP-70;pipes.push({x:W+20,top:lo+rnd()*(hi-lo),done:false})}
   function speed(){return 2.3+Math.min(score,40)*.025}
   // k = how many 60fps frames this step covers, so motion is the same speed on 60Hz and 120Hz screens
   function step(k){vy=Math.min(vy+.42*k,10);y+=vy*k;ang=Math.max(-.5,Math.min(1.2,vy/9));ground=(ground+speed()*k)%24;
@@ -37,7 +37,7 @@ mount(api){
     const bx=W*.3;if(y+R>H-GROUND||y-R<0)return over();
     for(const p of pipes){if(bx+R>p.x+3&&bx-R<p.x+PIPE-3&&(y-R<p.top||y+R>p.top+GAP))return over()}}
   function over(){phase="over";dist=performance.now();setTimeout(()=>api.sound("lose"),0);
-    const r=api.result(score?{score,text:`${score} gap${score===1?"":"s"}`,xp:Math.min(score*2,25)}:{});
+    const txt=`${score} gap${score===1?"":"s"}`,r=api.result(Object.assign(score?{score,text:txt,xp:Math.min(score*2,25)}:{},{ch:{v:score,text:txt,higher:true}}));
     show(`<big>${score}</big><div>${score===1?"gap":"gaps"} cleared${r.best?" &middot; <b>New best!</b>":st.best?` &middot; Best: ${st.best}`:""}</div>${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<button class="btn default" type="button" data-fg="new">Play again</button>`);status()}
   function loop(){cancelAnimationFrame(raf);raf=requestAnimationFrame(function f(t){
     if(phase==="run"){const k=Math.max(0,Math.min(100,t-last))/(1000/60),n=Math.ceil(k);last=t;for(let i=0;i<n&&phase==="run";i++)step(k/n)}

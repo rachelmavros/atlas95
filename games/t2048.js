@@ -25,13 +25,13 @@ A95G.t2048={
 help:`<div>Slide all the tiles at once. When two tiles with the same number touch, they merge into one: 2+2 makes 4, 4+4 makes 8, and so on. Every move adds a new tile.</div>
 <ul class="factlist"><li><b>Computer:</b> arrow keys or W A S D.</li><li><b>Phone:</b> swipe on the board.</li><li>Reach the <b>2048</b> tile to win, then keep going for a higher score. The game ends when no move is left.</li><li>Your game is saved, so you can come back to it later.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;let tiles,score,nextId=1,over=false,won,busy=false,els=new Map(),timer=null;
+  api.css(CSS);const st=api.stats;let tiles,score,nextId=1,over=false,won,busy=false,els=new Map(),timer=null,rnd=Math.random;
   api.bar.innerHTML=`<button class="btn" type="button" data-t48="new">New game</button>`;
   api.root.innerHTML=`<div class="t48-wrap"><div class="t48-score"><div><small>SCORE</small><b id="t48s">0</b></div><div><small>BEST</small><b id="t48b">0</b></div></div><div class="t48-board" aria-label="2048 board" role="application">${[...Array(16)].map((_,i)=>`<div class="t48-cell" style="left:${i%4*25}%;top:${Math.floor(i/4)*25}%"></div>`).join("")}</div><div class="note">Swipe or use the arrow keys.</div></div>`;
   const board=api.root.querySelector(".t48-board");
   const at=(r,c)=>tiles.find(t=>t.r===r&&t.c===c&&!t.gone);
-  function addTile(){const free=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!at(r,c))free.push([r,c]);if(!free.length)return;const [r,c]=free[Math.floor(Math.random()*free.length)];tiles.push({id:nextId++,r,c,v:Math.random()<.9?2:4,fresh:true})}
-  function fresh(){tiles=[];score=0;over=false;won=false;addTile();addTile();save();draw()}
+  function addTile(){const free=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!at(r,c))free.push([r,c]);if(!free.length)return;const [r,c]=free[Math.floor(rnd()*free.length)];tiles.push({id:nextId++,r,c,v:rnd()<.9?2:4,fresh:true})}
+  function fresh(){rnd=api.begin({});tiles=[];score=0;over=false;won=false;addTile();addTile();save();draw()}
   function save(){st.game=over?null:{t:tiles.filter(t=>!t.gone).map(t=>[t.r,t.c,t.v]),s:score,w:won};api.save()}
   function load(){const g=st.game;if(!g||!g.t||!g.t.length)return false;tiles=g.t.map(([r,c,v])=>({id:nextId++,r,c,v}));score=g.s||0;won=!!g.w;over=false;return true}
   function place(el,t){el.style.left=t.c*25+"%";el.style.top=t.r*25+"%"}
@@ -62,7 +62,7 @@ mount(api){
       if(!canMove())end();save()},api.reduced()?0:SLIDE)}
   function banner(h){const d=document.createElement("div");d.className="t48-over";d.innerHTML=`<div class="dlg"><div class="dlg-body">${h}</div></div>`;board.appendChild(d);const b=d.querySelector(".btn");if(b)b.focus({preventScroll:true})}
   function end(){over=true;const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;
-    const r=api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400))+(top>=2048?20:0)});save();api.sound("lose");
+    const r=api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400))+(top>=2048?20:0),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}});save();api.sound("lose");
     banner(`<big>Game over</big><div>Score: <b>${score.toLocaleString("en-US")}</b> &middot; top tile ${top}</div>${r.best?"<div><b>New best score!</b></div>":""}${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<div class="actions"><button class="btn default" type="button" data-t48="new">Play again</button></div>`)}
   api.on(document,"keydown",e=>{if(!api.active()||e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;const d=KEYS[e.key]||KEYS[e.key.toLowerCase()];if(d){e.preventDefault();move(d)}});
   let t0=null;
@@ -71,10 +71,10 @@ mount(api){
   api.on(board,"touchmove",e=>e.preventDefault(),{passive:false});
   const onNew=e=>{const b=e.target.closest("[data-t48]");if(!b)return;if(b.dataset.t48==="go"){b.closest(".t48-over").remove();return}
     // giving up partway still counts the score
-    if(!over&&score>0&&tiles.length){const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400))})}
+    if(!over&&score>0&&tiles.length){const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400)),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}})}
     clearTimeout(timer);busy=false;board.querySelectorAll(".t48-over").forEach(x=>x.remove());fresh()};
   api.on(api.root,"click",onNew);api.on(api.bar,"click",onNew);
-  if(load())draw();else fresh();
+  if(!api.seeded()&&load())draw();else fresh();
   return {unmount(){clearTimeout(timer)}};
 }};
 })();

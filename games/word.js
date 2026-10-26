@@ -49,7 +49,7 @@ mount(api){
   let mode="daily",ans,guesses,cur,done,busy=false;
   function load(m){mode=m;cur="";busy=false;
     if(m==="daily"){ans=daily;const d=st.days[today];if(d){guesses=d.g.slice();done=true}else{guesses=st.cur&&st.cur.d===today?st.cur.g.slice():[];done=false}}
-    else{do{ans=ANSWERS[Math.floor(Math.random()*ANSWERS.length)]}while(ans===daily);guesses=[];done=false}
+    else{const rnd=api.begin({});do{ans=ANSWERS[Math.floor(rnd()*ANSWERS.length)]}while(ans===daily);guesses=[];done=false}
     api.bar.innerHTML=`<button class="btn" type="button" data-dw="daily" aria-pressed="${m==="daily"}">Today's word</button><button class="btn" type="button" data-dw="practice" aria-pressed="${m==="practice"}">${m==="practice"?"New practice word":"Practice"}</button>`;
     render();say(m==="daily"?(done?"":`Daily Word for ${api.niceDate(today)}`):"Practice word: guess away!")}
   function say(t){const e=api.root.querySelector(".dw-msg");if(e)e.textContent=t}
@@ -89,7 +89,7 @@ mount(api){
       if(won){st.wins=(st.wins||0)+1;st.dist[n]=(st.dist[n]||0)+1;st.streak=st.days[yd]&&st.days[yd].won?(st.streak||0)+1:1;st.maxStreak=Math.max(st.maxStreak||0,st.streak);st.min=Math.min(st.min||9,n)}
       else st.streak=0;
       const r=api.result({xp:won?34-n*4:5});render();say(won?`Solved in ${n}!${r.xp?` +${r.xp} XP`:""}`:"So close. Try again tomorrow!")}
-    else{const r=api.result({xp:won?4:1});render();say(won?`Solved in ${n}!${r.xp?` +${r.xp} XP`:""}`:"")}
+    else{const r=api.result({xp:won?4:1,ch:{v:won?n:7,text:won?`${n}/6`:"X/6",higher:false}});render();say(won?`Solved in ${n}!${r.xp?` +${r.xp} XP`:""}`:"")}
     api.sound(won?"win":"lose");const b=api.root.querySelector(".dw-end .btn.default");if(b&&matchMedia("(pointer:fine)").matches)b.focus({preventScroll:true})}
   function share(btn){const d=st.days[today];if(!d)return;const E={g:"🟩",y:"🟨",b:"⬜"};
     api.share(`Atlas95 Daily Word · ${api.niceDate(today)} ${d.won?d.n:"X"}/6\n${d.g.map(g=>rate(g,daily).map(r=>E[r]).join("")).join("\n")}${st.streak>1?`\n🔥 ${st.streak}-day streak`:""}`,btn)}
@@ -99,7 +99,7 @@ mount(api){
   api.on(document,"keydown",e=>{if(!api.active()||e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
     if(e.key==="Enter"){if(e.target.closest&&e.target.closest("button")&&!e.target.closest(".dw-kb"))return;e.preventDefault();type("enter")}
     else if(e.key==="Backspace"){e.preventDefault();type("back")}else if(/^[a-zA-Z]$/.test(e.key))type(e.key.toLowerCase())});
-  load("daily");
+  load(api.seeded()?"practice":"daily");
   return {unmount(){}};
 }};
 })();

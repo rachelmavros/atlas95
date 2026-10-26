@@ -14,9 +14,9 @@ const CSS=`
 .pl-table{position:relative;width:min(100%,780px);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .pl-table canvas{display:block;width:100%;height:auto;cursor:crosshair}`;
 // ---------- physics (pure: works on a world object, also used by the computer to test shots) ----------
-function rack(){const balls=[{n:0,x:L*.25,y:WD/2,vx:0,vy:0,in:false}];
+function rack(rnd=Math.random){const balls=[{n:0,x:L*.25,y:WD/2,vx:0,vy:0,in:false}];
   // triangle with the 8 in the middle, a solid and a stripe in the back corners
-  const order=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15],rest=order.filter(n=>![1,8,9,15].includes(n));const sh=rest.sort(()=>Math.random()-.5);
+  const order=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15],rest=order.filter(n=>![1,8,9,15].includes(n));const sh=api0shuffle(rest,rnd);
   const rows=[[1],[sh[0],sh[1]],[sh[2],8,sh[3]],[sh[4],sh[5],sh[6],sh[7]],[9,sh[8],sh[9],sh[10],15]];
   const fx=L*.72,dx=R*2*Math.cos(Math.PI/6)+.02;rows.forEach((row,i)=>row.forEach((n,j)=>balls.push({n,x:fx+i*dx,y:WD/2+(j-(row.length-1)/2)*(R*2+.02),vx:0,vy:0,in:false})));
   return {balls,ev:{first:null,pocketed:[],rails:0}}}
@@ -36,6 +36,7 @@ function pocket(w,b){b.in=true;b.vx=b.vy=0;w.ev.pocketed.push(b.n)}
 function strike(w,ang,pow){const c=w.balls[0];c.vx=Math.cos(ang)*pow*MAXV;c.vy=Math.sin(ang)*pow*MAXV;w.ev={first:null,pocketed:[],rails:0}}
 const clone=w=>({balls:w.balls.map(b=>Object.assign({},b)),ev:{first:null,pocketed:[],rails:0}});
 function simulate(w,ang,pow){const s=clone(w);strike(s,ang,pow);for(let t=0;t<8/DT/2&&moving(s);t++)stepWorld(s,DT*2);return s}
+const api0shuffle=(a,rnd)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 // ---------- rules helpers ----------
 const isSolid=n=>n>=1&&n<=7,isStripe=n=>n>=9;
 const inGroup=(n,g)=>g==="solid"?isSolid(n):g==="stripe"?isStripe(n):false;
@@ -43,7 +44,7 @@ A95G.pool={
 help:`<div><b>Aim:</b> press anywhere on the table and pull back, away from where you want the white ball to go, like a slingshot. The farther you pull, the harder the shot. Let go to shoot. (Pull back only a little and let go to cancel.)</div>
 <ul class="factlist"><li><b>8-ball:</b> the first ball you sink makes you <b>solids</b> (1 to 7) or <b>stripes</b> (9 to 15). Sink all of yours, then the black 8 to win.</li><li>Sinking one of your own balls gives you another turn.</li><li><b>Fouls</b> (sinking the white ball, missing everything, or hitting the other player's ball first) give the other side <b>ball in hand</b>: they can drag the white ball anywhere.</li><li>Sinking the 8 early, or fouling while you sink it, loses the game.</li><li><b>Solo:</b> sink all 15 in as few shots as you can. Sinking the white ball costs an extra shot.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.mode=MODES[st.mode]?st.mode:"medium";st.rec=st.rec||{};
+  api.css(CSS);const st=api.stats;const mo=api.modeOpts();if(mo&&MODES[mo.mode])st.mode=mo.mode;st.mode=MODES[st.mode]?st.mode:"medium";st.rec=st.rec||{};
   let W,turn,groups,phase,inHand,isBreak,shots,winner,aim=null,place=null,raf=0,aiT=null,msg="",portrait=false,s=1,dpr=1,lastT=0;
   api.bar.innerHTML=`<button class="btn" type="button" data-pl="new">New game</button><select class="sel95" data-plmode aria-label="Mode">${Object.entries(MODES).map(([k,v])=>`<option value="${k}"${st.mode===k?" selected":""}>${v}</option>`).join("")}</select>`;
   api.root.innerHTML=`<div class="pl-wrap"><div class="pl-hud" aria-live="polite"></div><div class="pl-table"><canvas aria-label="Pool table"></canvas></div><div class="note" id="plnote"></div></div>`;
@@ -57,7 +58,7 @@ mount(api){
   function setT(){if(portrait)cx.setTransform(0,-s*dpr,s*dpr,0,s*dpr*RAIL,s*dpr*(L+RAIL));else cx.setTransform(s*dpr,0,0,s*dpr,s*dpr*RAIL,s*dpr*RAIL)}
   function toTable(e){const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/s,py=(e.clientY-r.top)/s;return portrait?{x:L+RAIL-py,y:px-RAIL}:{x:px-RAIL,y:py-RAIL}}
   // ---- game flow ----
-  function newGame(){cancelAnimationFrame(raf);clearTimeout(aiT);W=rack();turn=0;groups=[null,null];phase="aim";inHand=false;isBreak=true;shots=0;winner=null;aim=null;place=null;note.textContent="";
+  function newGame(){cancelAnimationFrame(raf);clearTimeout(aiT);W=rack(api.begin({mode:st.mode}));turn=0;groups=[null,null];phase="aim";inHand=false;isBreak=true;shots=0;winner=null;aim=null;place=null;note.textContent="";
     size();say(solo()?"Break! Sink all 15 balls.":vsAI()?"Your break. Pull back from the table to aim.":"Player 1 breaks.");draw();status()}
   function say(t){msg=t;renderHud()}
   function renderHud(){const left=g=>W.balls.filter(b=>!b.in&&inGroup(b.n,g)).map(b=>b.n);
@@ -89,7 +90,7 @@ mount(api){
     say(`${why} ${vsAI()?(w===0?"You win!":"The computer wins."):`${name(w)} wins!`}${res.xp?` +${res.xp} XP`:""}`);
     note.innerHTML=`<button class="btn default" type="button" data-pl="new">Play again</button>`;status()}
   function finishSolo(){phase="over";const prev=st.solo,nb=prev==null||shots<prev;if(nb)st.solo=shots;st.bestText=`${st.solo} shots (solo)`;
-    const res=api.result({xp:Math.max(5,30-Math.max(0,shots-15))});api.sound("win");
+    const res=api.result({xp:Math.max(5,30-Math.max(0,shots-15)),ch:{v:shots,text:`${shots} shots`,higher:false}});api.sound("win");
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Pool!</b><br>Cleared in ${shots} shots</span>`);
     say(`Table cleared in ${shots} shots!${nb?" New best!":""}${res.xp?` +${res.xp} XP`:""}`);note.innerHTML=`<button class="btn default" type="button" data-pl="new">Rack again</button>`;draw();status()}
   // ---- the computer: ghost-ball aiming at every legal ball and pocket, best few tested in simulation ----

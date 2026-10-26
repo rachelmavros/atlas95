@@ -24,13 +24,13 @@ A95G.solitaire={
 help:`<div>Build four piles in the top right, one per suit, from Ace up to King.</div>
 <ul class="factlist"><li><b>Tap a card</b> to send it to the best place, or <b>drag</b> it where you want.</li><li>In the seven columns, stack cards downward in alternating colors (red 7 on black 8). Only a King can go in an empty column.</li><li>Tap the deck in the top left to turn over cards. When it runs out, tap it again to start over.</li><li><b>Draw 3</b> turns over three at a time and is harder. <b>Undo</b> takes back a move.</li><li>Your game is saved, so you can come back to it.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.draw=st.draw===3?3:1;st.bests=st.bests||{};
+  api.css(CSS);const st=api.stats;const mo=api.modeOpts();if(mo&&mo.draw)st.draw=+mo.draw;st.draw=st.draw===3?3:1;st.bests=st.bests||{};
   let G,hist=[],t0=0,tick=null,drag=null,fx=null,cw=60,ch=84,gap=6,fan={};
   api.bar.innerHTML=`<button class="btn" type="button" data-sl="new">New game</button><button class="btn" type="button" data-sl="undo">Undo</button><select class="sel95" data-sldraw aria-label="Draw">${[1,3].map(n=>`<option value="${n}"${st.draw===n?" selected":""}>Draw ${n}</option>`).join("")}</select><button class="btn" type="button" data-sl="auto" hidden>Auto finish</button>`;
   api.root.innerHTML=`<div class="sl-wrap"><div class="sl-board" role="application" aria-label="Solitaire"></div><div class="note" aria-live="polite" id="slnote"></div></div>`;
   const board=api.root.querySelector(".sl-board"),note=api.root.querySelector("#slnote");
   // ---- game state ----
-  function deal(){const deck=[];for(let s=0;s<4;s++)for(let r=1;r<=13;r++)deck.push({s,r,up:false});const d=api.shuffle(deck,Math.random);
+  function deal(){const deck=[];for(let s=0;s<4;s++)for(let r=1;r<=13;r++)deck.push({s,r,up:false});const d=api.shuffle(deck,api.begin({draw:st.draw}));
     const tab=[...Array(7)].map((_,i)=>{const p=d.splice(0,i+1);p[i].up=true;return p});
     G={draw:st.draw,stock:d,waste:[],found:[[],[],[],[]],tab,moves:0,ms:0,done:false};hist=[];t0=0;clearInterval(tick);save();layout();status();note.textContent=""}
   const snap=()=>JSON.stringify(G);
@@ -101,7 +101,7 @@ mount(api){
   function autoFinish(){const go=()=>{if(G.done)return;for(let i=0;i<7;i++){if(G.tab[i].length){const src={t:"t",i,n:1};const dst=autoDst(src);if(dst&&dst.t==="f"){move(src,dst,true);setTimeout(go,api.reduced()?0:70);return}}}};go()}
   // ---- winning: the classic bouncing cards ----
   function win(){G.done=true;clearInterval(tick);const ms=elapsed(),k="d"+G.draw,prev=st.bests[k],nb=prev==null||ms<prev;if(nb)st.bests[k]=ms;
-    st.wins=(st.wins||0)+1;st.game=null;const r=api.result({xp:G.draw===3?25:15});api.sound("win");api.bar.querySelector("[data-sl=auto]").hidden=true;
+    st.wins=(st.wins||0)+1;st.game=null;const r=api.result({xp:G.draw===3?25:15,ch:{v:ms,text:api.fmtTime(ms),higher:false}});api.sound("win");api.bar.querySelector("[data-sl=auto]").hidden=true;
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Solitaire!</b><br>Draw ${G.draw}: ${api.fmtTime(ms)}</span>`);
     note.innerHTML=`<b>You won!</b> ${api.fmtTime(ms)} &middot; ${G.moves} moves${nb?" &middot; best time!":""}${r.xp?` &middot; +${r.xp} XP`:""} <button class="btn default" type="button" data-sl2="new">Deal again</button>`;
     status();if(!api.reduced())bounce()}
@@ -116,7 +116,7 @@ mount(api){
     const stepF=t=>{if(!cur||cur.x<-cw||cur.x>W){if(!queue.length){stopFx();return}const q=queue.shift();cur={img:cardImg(q.c),x:colX(3+q.i),y:gap,vx:(Math.random()<.5?-1:1)*(2+Math.random()*3),vy:-Math.random()*4}}
       cur.vy+=.5;cur.x+=cur.vx;cur.y+=cur.vy;if(cur.y+ch>H){cur.y=H-ch;cur.vy*=-.78}x.drawImage(cur.img,cur.x,cur.y);raf=requestAnimationFrame(stepF)};raf=requestAnimationFrame(stepF)}
   function stopFx(){if(!fx)return;fx.stop();fx.cv.remove();fx=null}
-  if(!load())deal();else{layout();status();after()}
+  if(api.seeded()||!load())deal();else{layout();status();after()}
   return {pause(){if(t0){G.ms+=Date.now()-t0;t0=0;clearInterval(tick);save()}},unmount(){if(t0){G.ms+=Date.now()-t0;t0=0;save()}clearInterval(tick);stopFx()}};
 }};
 })();

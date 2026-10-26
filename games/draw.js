@@ -58,7 +58,7 @@ A95G.draw={
 help:`<div>A picture appears for <b>3 seconds</b>. Remember it! Then the picture disappears and you draw it from memory.</div>
 <ul class="factlist"><li>Draw with your finger or mouse. Use as many lines as you like, then press <b>Done</b>.</li><li>Your score is how closely your lines match the original. Size and position don't matter much, but the shape and its proportions do.</li><li>Each game is ${ROUNDS} drawings. Pick <b>Shapes</b> (stars, spirals, hexagons...) or <b>Objects</b> (a cup, a rocket, a light bulb...).</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.mode=MODES[st.mode]?st.mode:"shapes";st.bests=st.bests||{};
+  api.css(CSS);const st=api.stats;const mo=api.modeOpts();if(mo&&MODES[mo.mode])st.mode=mo.mode;st.mode=MODES[st.mode]?st.mode:"shapes";st.bests=st.bests||{};
   let phase="ready",items=[],idx=0,scores=[],strokes=[],cur=null,showT=null,raf=0,target=null;
   const bar=()=>{api.bar.innerHTML=`<button class="btn" type="button" data-dm="new">New game</button><select class="sel95" data-dmmode aria-label="Pictures">${Object.entries(MODES).map(([k,v])=>`<option value="${k}"${st.mode===k?" selected":""}>${v}</option>`).join("")}</select>`};bar();
   api.root.innerHTML=`<div class="dm-wrap"><div class="dm-head"></div><div class="dm-title" aria-live="polite"></div><div class="dm-pad"><canvas width="600" height="600" aria-label="Drawing pad"></canvas><div class="dm-big"></div></div><div class="actions" id="dmact" style="justify-content:center"></div><div class="dm-scores"></div></div>`;
@@ -74,7 +74,7 @@ mount(api){
   function paintStrokes(color){cx.save();cx.strokeStyle=color;cx.lineWidth=7;cx.lineCap=cx.lineJoin="round";strokes.forEach(s=>{cx.beginPath();s.forEach(([a,b],k)=>k?cx.lineTo(a*S,b*S):cx.moveTo(a*S,b*S));if(s.length===1)cx.lineTo(s[0][0]*S+.5,s[0][1]*S);cx.stroke()});cx.restore()}
   function ready(){phase="ready";idx=0;scores=[];strokes=[];clearTimeout(showT);cancelAnimationFrame(raf);clear();
     big.innerHTML=`Draw from Memory<small>${MODES[st.mode]}: ${ROUNDS} drawings</small>`;title.textContent="";act.innerHTML=`<button class="btn default" type="button" data-dm="start">Start</button>`;head();act.querySelector("button").focus({preventScroll:true})}
-  function start(){const p=pool();items=api.shuffle(p,Math.random).slice(0,ROUNDS);idx=0;scores=[];show()}
+  function start(){const p=pool();items=api.shuffle(p,api.begin({mode:st.mode})).slice(0,ROUNDS);idx=0;scores=[];show()}
   function show(){phase="show";target=items[idx];A95G.draw._cur=target.d;strokes=[];clear();paintTarget("#000080",9);big.innerHTML="";title.textContent=`Memorize: ${target.name}`;act.innerHTML="";head();api.sound("tap");
     let bar=pad.querySelector(".dm-timer");if(!bar){bar=document.createElement("div");bar.className="dm-timer";pad.appendChild(bar)}bar.style.display="";const t0=performance.now();
     const tickBar=t=>{const f=Math.max(0,1-(t-t0)/SHOW_MS);bar.style.width=f*100+"%";if(f>0&&phase==="show")raf=requestAnimationFrame(tickBar)};raf=requestAnimationFrame(tickBar);
@@ -87,7 +87,7 @@ mount(api){
     title.textContent=`${target.name}: green is the original, blue is yours`;api.sound(s>=75?"win":"tap");idx++;head();
     act.innerHTML=idx<ROUNDS?`<button class="btn default" type="button" data-dm="next">Next drawing &gt;</button>`:`<button class="btn default" type="button" data-dm="finish">See my score &gt;</button>`;act.querySelector("button").focus({preventScroll:true})}
   function finish(){phase="over";const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*10)/10,prev=st.bests[st.mode],nb=prev==null||avg>prev;if(nb)st.bests[st.mode]=avg;
-    st.bestText=`${Math.max(...Object.values(st.bests)).toFixed(1)}%`;const r=api.result({xp:Math.round(avg/8)});
+    st.bestText=`${Math.max(...Object.values(st.bests)).toFixed(1)}%`;const r=api.result({xp:Math.round(avg/8),ch:{v:avg,text:`${avg.toFixed(1)}%`,higher:true}});
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Draw from Memory!</b><br>${MODES[st.mode]}: ${avg.toFixed(1)}%</span>`);
     clear();big.innerHTML=`${avg.toFixed(1)}%<small>average over ${ROUNDS} drawings${nb?" · new best!":""}${r.xp?` · +${r.xp} XP`:""}</small>`;title.textContent="Game over";head();
     act.innerHTML=`<button class="btn default" type="button" data-dm="start">Play again</button>`;api.sound("win")}

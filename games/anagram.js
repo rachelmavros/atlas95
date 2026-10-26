@@ -37,14 +37,14 @@ A95G.anagram={
 help:`<div>You get six letters. Make as many words as you can from them before the clock runs out. Each word needs 3 letters or more.</div>
 <ul class="factlist"><li>Tap the letters (or type them), then press <b>Enter</b>. <b>Shuffle</b> mixes the letters up for a fresh look.</li><li>The boxes show every common word hiding in the letters. Uncommon words still count as bonus words.</li><li>Find a word that uses <b>all six letters</b> to move on to the next round. If time runs out first, the game is over.</li><li>Longer words score more: 50, 100, 200, then 400 points for six letters. Find every word in a round for a ${ALL_BONUS}-point bonus.</li></ul><div><b>Relaxed</b> mode has no time limit. The clock just counts how long you take, and you keep going until you find every word (or press <b>Reveal answers</b>).</div>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.recent=st.recent||[];let mode=st.mode==="relax"?"relax":"sprint";const relax=()=>mode==="relax";
-  let phase="ready",round=0,total=0,base,letters,words,found,bonus,guess=[],t0=0,left=ROUND_MS,tick=null,got6=false,pausedAt=0;
+  api.css(CSS);const st=api.stats;st.recent=st.recent||[];const mo=api.modeOpts();if(mo&&mo.mode)st.mode=mo.mode;let mode=st.mode==="relax"?"relax":"sprint";const relax=()=>mode==="relax";
+  let rnd=Math.random,phase="ready",round=0,total=0,base,letters,words,found,bonus,guess=[],t0=0,left=ROUND_MS,tick=null,got6=false,pausedAt=0;
   const bar=()=>{api.bar.innerHTML=`<button class="btn" type="button" data-ag="new">New game</button><span class="sep"></span><button class="btn" type="button" data-agm="sprint" aria-pressed="${!relax()}">Sprint</button><button class="btn" type="button" data-agm="relax" aria-pressed="${relax()}">Relaxed</button>`};bar();
   api.root.innerHTML=`<div class="ag-wrap"></div>`;const wrap=api.root.querySelector(".ag-wrap");
-  function pickBase(){let b;for(let k=0;k<30;k++){b=BASES[Math.floor(Math.random()*BASES.length)];if(!st.recent.includes(b))break}st.recent=[b,...st.recent].slice(0,60);api.save();return b}
-  function startRound(){round++;base=pickBase();const bc=counts(base);
+  function pickBase(){let b;for(let k=0;k<30;k++){b=BASES[Math.floor(rnd()*BASES.length)];if(api.seeded()||!st.recent.includes(b))break}st.recent=[b,...st.recent].slice(0,60);api.save();return b}
+  function startRound(){if(!round)rnd=api.begin({mode});round++;base=pickBase();const bc=counts(base);
     words=[...LISTED].filter(w=>fits(w,bc)).sort((a,b)=>a.length-b.length||(a<b?-1:1));
-    letters=api.shuffle([...base],Math.random);found=new Set();bonus=[];guess=[];got6=false;left=ROUND_MS;t0=Date.now();phase="run";
+    letters=api.shuffle([...base],rnd);found=new Set();bonus=[];guess=[];got6=false;left=ROUND_MS;t0=Date.now();phase="run";
     render();clearInterval(tick);tick=setInterval(clock,250);say(relax()?`Find all ${words.length} words. Take your time.`:round===1?"Go!":`Round ${round}. Go!`)}
   function clock(){if(relax()){const e=wrap.querySelector("#agt");if(e)e.textContent=api.fmtTime(Date.now()-t0);return}left=Math.max(0,ROUND_MS-(Date.now()-t0));const e=wrap.querySelector("#agt");if(e){e.textContent=api.fmtTime(left);e.parentElement.classList.toggle("low",left<15000)}if(!left)endRound(false)}
   function say(t){const e=wrap.querySelector(".ag-msg");if(e)e.textContent=t}
@@ -80,7 +80,7 @@ mount(api){
     phase=got6?"between":"over";render();const end=wrap.querySelector(".ag-end");
     if(phase==="between"){api.sound("win");end.innerHTML=`<div class="fb ok" style="text-align:center">${all?`You found every word! +${extra} bonus`:"Time's up, but you found a six-letter word."}</div><div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-ag="next">Round ${round+1} &gt;</button></div>`}
     else{if(st.best==null||total>st.best)st.bestR=round;st.maxR=Math.max(st.maxR||0,round);
-      const r=api.result({score:total,text:total.toLocaleString("en-US"),xp:Math.min(30,Math.round(total/150))});api.sound("lose");
+      const r=api.result({score:total,text:total.toLocaleString("en-US"),xp:Math.min(30,Math.round(total/150)),ch:{v:total,text:`${total.toLocaleString("en-US")} points`,higher:true}});api.sound("lose");
       end.innerHTML=`<div class="fb no" style="text-align:center">Time's up! No six-letter word this round.</div><div style="text-align:center">Final score: <b>${total.toLocaleString("en-US")}</b> &middot; reached round ${round}${r.best||r.first?" &middot; <b>New best!</b>":""}${r.xp?` &middot; +${r.xp} XP`:""}</div><div class="note" style="text-align:center">The red words are the ones you missed.</div><div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-ag="new">Play again</button></div>`}
     status();const b=end.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
   function endRelax(all){clearInterval(tick);const ms=(phase==="paused"?pausedAt:Date.now())-t0;phase="between";pausedAt=ms+t0;

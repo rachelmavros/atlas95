@@ -21,16 +21,16 @@ A95G.snake={
 help:`<div>Steer the snake to eat the red apples. Each apple makes you longer and a little faster.</div>
 <ul class="factlist"><li><b>Computer:</b> arrow keys or W A S D. Space pauses.</li><li><b>Phone:</b> swipe on the screen, or use the arrow pad.</li><li>Hitting your own tail ends the game. With <b>Walls: On</b>, so does hitting the edge. With walls off, you wrap around to the other side.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;if(st.walls==null)st.walls=true;
+  api.css(CSS);const st=api.stats;if(st.walls==null)st.walls=true;const mo=api.modeOpts();if(mo&&mo.walls!=null)st.walls=!!mo.walls;
   api.bar.innerHTML=`<button class="btn" type="button" data-sn="new">New game</button><button class="btn" type="button" data-sn="walls" aria-pressed="${st.walls}">Walls: ${st.walls?"On":"Off"}</button>`;
   api.root.innerHTML=`<div class="sn-wrap"><div class="sn-screen"><canvas width="${SIZE}" height="${SIZE}" aria-label="Snake game board"></canvas><div class="sn-msg"></div></div>
     <div class="sn-pad"><button class="btn" type="button" data-d="up" aria-label="Up">▲</button><button class="btn" type="button" data-d="left" aria-label="Left">◀</button><button class="btn" type="button" data-d="down" aria-label="Down">▼</button><button class="btn" type="button" data-d="right" aria-label="Right">▶</button></div></div>`;
   const cv=api.root.querySelector("canvas"),cx=cv.getContext("2d"),msg=api.root.querySelector(".sn-msg"),screen=api.root.querySelector(".sn-screen");
-  let snake,dir,queue,apple,apples,phase,timer=null,grow;
+  let snake,dir,queue,apple,apples,phase,timer=null,grow,rnd=Math.random;
   const speed=()=>Math.max(55,135-apples*3);
-  function reset(){const m=N>>1;snake=[[m,m],[m-1,m],[m-2,m]];dir="right";queue=[];apples=0;grow=0;placeApple();phase="ready";draw();
+  function reset(){rnd=api.begin({walls:st.walls});const m=N>>1;snake=[[m,m],[m-1,m],[m-2,m]];dir="right";queue=[];apples=0;grow=0;placeApple();phase="ready";draw();
     show(`<big>Snake</big>${st.best?`Best: ${st.best} apple${st.best===1?"":"s"}`:""}<small>${matchMedia("(pointer:fine)").matches?"Press an arrow key to start":"Swipe or tap an arrow to start"}</small>`);status()}
-  function placeApple(){const free=[];for(let x=0;x<N;x++)for(let y=0;y<N;y++)if(!snake.some(p=>p[0]===x&&p[1]===y))free.push([x,y]);apple=free[Math.floor(Math.random()*free.length)]}
+  function placeApple(){const free=[];for(let x=0;x<N;x++)for(let y=0;y<N;y++)if(!snake.some(p=>p[0]===x&&p[1]===y))free.push([x,y]);apple=free[Math.floor(rnd()*free.length)]}
   function show(h){msg.innerHTML=h;msg.hidden=!h}
   function status(){api.status(`Apples: ${apples}`,`Best: ${st.best||0}`)}
   function turn(d){if(phase==="over")return;const last=queue.length?queue[queue.length-1]:dir,[a,b]=DIRS[last],[c,e]=DIRS[d];if(a===-c&&b===-e||last===d)return;if(queue.length<3)queue.push(d);if(phase!=="run")start()}
@@ -44,7 +44,7 @@ mount(api){
     if(x===apple[0]&&y===apple[1]){apples++;grow+=1;api.sound("eat");if(snake.length>=N*N){over(true);return}placeApple();status()}
     draw();timer=setTimeout(step,speed())}
   function over(won){phase="over";clearTimeout(timer);draw(true);api.sound(won?"win":"lose");
-    const r=api.result(apples?{score:apples,text:`${apples} apple${apples===1?"":"s"}`,xp:Math.min(apples,25)}:{});
+    const txt=`${apples} apple${apples===1?"":"s"}`,r=api.result(Object.assign(apples?{score:apples,text:txt,xp:Math.min(apples,25)}:{},{ch:{v:apples,text:txt,higher:true}}));
     show(`<big>${won?"You filled the board!":"Game over"}</big>${apples} apple${apples===1?"":"s"}${r.best?" · New best!":st.best?` · Best: ${st.best}`:""}${r.xp?`<small>+${r.xp} XP</small>`:""}<small>Press Space or tap to play again</small>`);status()}
   function draw(dead){cx.fillStyle="#000";cx.fillRect(0,0,SIZE,SIZE);
     cx.fillStyle="#0b1a0b";for(let x=0;x<N;x++)for(let y=0;y<N;y++)if((x+y)%2)cx.fillRect(x*CELL,y*CELL,CELL,CELL);

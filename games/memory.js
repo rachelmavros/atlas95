@@ -35,10 +35,10 @@ A95G.memory={
 help:`<div>All the cards start face down. Flip two at a time. If they match, they stay up. If not, they flip back, so remember where things were!</div>
 <ul class="factlist"><li><b>Shapes:</b> find two identical shapes.</li><li><b>Flags &amp; countries:</b> match each flag to its country's name.</li><li><b>Element symbols:</b> match each symbol (like Fe) to its element (Iron).</li><li>Fewer moves is better. Each pair of flips counts as one move.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats,esc=api.esc;st.mode=MODES[st.mode]?st.mode:"shapes";st.size=SIZES[st.size]?st.size:"normal";st.bests=st.bests||{};
+  api.css(CSS);const st=api.stats,esc=api.esc;const mo=api.modeOpts();if(mo){if(MODES[mo.mode])st.mode=mo.mode;if(SIZES[mo.size])st.size=mo.size}st.mode=MODES[st.mode]?st.mode:"shapes";st.size=SIZES[st.size]?st.size:"normal";st.bests=st.bests||{};
   let cards,open,moves,misses,found,lock,t0,tick=null,flipT=null;
   const bar=()=>{api.bar.innerHTML=`<button class="btn" type="button" data-mm="new">New game</button><select class="sel95" data-mmset="mode" aria-label="Cards">${Object.entries(MODES).map(([k,v])=>`<option value="${k}"${st.mode===k?" selected":""}>${v}</option>`).join("")}</select><select class="sel95" data-mmset="size" aria-label="Size">${Object.entries(SIZES).map(([k,v])=>`<option value="${k}"${st.size===k?" selected":""}>${v.label} (${v.n} pairs)</option>`).join("")}</select>`};
-  function deal(){const n=SIZES[st.size].n,rnd=Math.random;let pairs;
+  function deal(){const n=SIZES[st.size].n,rnd=api.begin({mode:st.mode,size:st.size});let pairs;
     if(st.mode==="shapes")pairs=api.shuffle(SHAPES,rnd).slice(0,n).map((s,i)=>{const h=`<svg viewBox="0 0 40 40" role="img" aria-label="${s[0]}">${s[1]}</svg>`;return [{k:i,html:h,name:s[0]},{k:i,html:h,name:s[0]}]});
     else if(st.mode==="flags")pairs=api.shuffle(api.countries().filter(c=>c.p>8e6),rnd).slice(0,n).map((c,i)=>[{k:i,html:api.flagImg(c,"",""),name:"Flag of "+c.n},{k:i,html:esc(c.n),name:c.n}]);
     else pairs=api.shuffle(api.elements().filter(e=>e.z<=56),rnd).slice(0,n).map((e,i)=>[{k:i,html:`<span class="sym">${esc(e.s)}</span>`,name:"Symbol "+e.s},{k:i,html:esc(e.n),name:e.n}]);
@@ -56,7 +56,7 @@ mount(api){
     misses++;lock=true;status();flipT=setTimeout(()=>{cards[a].up=cards[b].up=false;sync(a);sync(b);lock=false},850)}
   function win(){clearInterval(tick);const ms=Date.now()-t0,k=key(),prev=st.bests[k],nb=!prev||moves<prev.moves||moves===prev.moves&&ms<prev.ms;
     if(nb)st.bests[k]={moves,ms};if(!misses)st.flawless=true;st.bestText=`${st.bests[k].moves} moves (${SIZES[st.size].label}, ${MODES[st.mode].toLowerCase()})`;
-    const r=api.result({xp:({easy:5,normal:8,hard:12})[st.size]+(misses?0:5)});
+    const r=api.result({xp:({easy:5,normal:8,hard:12})[st.size]+(misses?0:5),ch:{v:moves,text:`${moves} moves`,higher:false}});
     if(nb&&prev)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Memory Match!</b><br>${moves} moves</span>`);
     api.sound("win");
     api.root.querySelector(".mm-done").innerHTML=`<div class="fb ok">All ${found} pairs in ${moves} moves &middot; ${api.fmtTime(ms)}${!misses?" &middot; not a single miss!":""}</div><div class="note">${nb?(prev?"New best for this mode!":"First win in this mode."):`Best: ${prev.moves} moves`}${r.xp?` &middot; +${r.xp} XP`:""}</div><div class="actions" style="justify-content:center;margin-top:6px"><button class="btn default" type="button" data-mm="new">Play again</button></div>`;

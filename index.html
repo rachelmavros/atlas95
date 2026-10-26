@@ -320,6 +320,12 @@ a.link:visited{color:#551a8b}
 .vbest{font-size:11.5px;font-weight:700;color:var(--done-ink)}
 .vgbar{display:contents}
 .vgame{display:flex;flex-direction:column;gap:10px}
+.vmode{background:var(--tip);border:1px solid var(--ink);padding:6px 8px;font-size:12.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vmode[hidden]{display:none}
+.vmode>span:nth-child(2){flex:1 1 220px;min-width:0}
+.vtour{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--tip);border:1px solid var(--ink);padding:8px 10px;margin-bottom:8px}
+.vtico{font-size:28px}.vtmid{flex:1;min-width:180px}
+.vchl{margin-bottom:8px}.vchrow{display:flex;gap:8px;align-items:center;font-size:12.5px}.vchmid{flex:1;min-width:0}
 /* daily lesson list */
 .gmlist{display:flex;flex-direction:column;gap:6px}
 .gmlrow{display:flex;align-items:center;gap:8px;background:var(--hi);box-shadow:var(--sunken);padding:6px 8px}
@@ -2565,7 +2571,11 @@ const GM_BADGES=[
   {k:"sol1",emo:"🃏",n:"Patience pays",d:"Win a game of Solitaire",t:()=>!!GV&&(vSt("solitaire").wins||0)>=1},
   {k:"draw80",emo:"✏️",n:"Photo finish",d:"Average 80% or better in a game of Draw from Memory",t:()=>!!GV&&Object.values(vSt("draw").bests||{}).some(v=>v>=80)},
   {k:"poolhard",emo:"🎱",n:"Pool shark",d:"Beat the computer at Pool on Hard",t:()=>!!GV&&(vSt("pool").hardW||0)>=1},
-  {k:"poolsolo",emo:"🎯",n:"Run the table",d:"Clear the Pool table solo in 30 shots or fewer",t:()=>!!GV&&vSt("pool").solo!=null&&vSt("pool").solo<=30}];
+  {k:"poolsolo",emo:"🎯",n:"Run the table",d:"Clear the Pool table solo in 30 shots or fewer",t:()=>!!GV&&vSt("pool").solo!=null&&vSt("pool").solo<=30},
+  {k:"chal1",emo:"🏁",n:"Challenger",d:"Send a friend a challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.sent.length>=1},
+  {k:"rival",emo:"⚔️",n:"Rival",d:"Beat a friend's challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.got.some(x=>vBetter(x.my,x.v,x.h))},
+  {k:"podium",emo:"🥉",n:"On the podium",d:"Finish top 3 in a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.length>=1},
+  {k:"champ",emo:"🥇",n:"Champion",d:"Win a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.some(x=>x.place===1)}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -2954,7 +2964,7 @@ document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.l
 // ---------- shared leaderboard (db) ----------
 let gmDB=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
 function gmPayload(){const st=GM.st,ds=Object.keys(st.dailies).sort(),last=ds[ds.length-1];const L=gmLevel(st.xp);
-  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,games:vBoard(),
+  return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,games:vBoard(),chal:vChPayload(),tour:GV.tour,tourL:GV.tourL,
     daily:last?{d:last,t:st.dailies[last].t,s:st.dailies[last].s,ms:st.dailies[last].ms,m:st.dailies[last].m}:null}}
 function gmSyncSoon(now){clearTimeout(gmSyncT);gmSyncT=setTimeout(gmSync,now?50:2500)}
 async function gmSync(){if(!gmDB||!gmUid||!gmCanWrite)return;const p=gmPayload(),k=JSON.stringify(p);if(k===gmLastSync)return;
@@ -3281,7 +3291,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="8";
+const VG_VER="9";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3378,13 +3388,15 @@ function vApi(g){
     toast:gmToast,
     share(text,btn){GM.share.vg=text;gmShare("vg",btn)},
     flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,
-    // a finished game: o={score, higher (default true), text, xp}. Returns {best, first, xp}.
+    // seeded runs (challenges, the weekly tournament): call begin(opts) at the start of every game and build the board with the generator it returns
+    begin:opts=>vBegin(g,opts),seeded:()=>!!(GV.mode&&GV.mode.g===g.id),modeOpts:()=>GV.mode&&GV.mode.g===g.id?GV.mode.opts:null,
+    // a finished game: o={score, higher (default true), text, xp, ch:{v,text,higher} for challenges}. Returns {best, first, xp}.
     result(o){st.plays=(st.plays||0)+1;let best=false,first=false;
       if(o&&o.score!=null){const lower=o.higher===false,better=st.best==null||(lower?o.score<st.best:o.score>st.best);
         if(better){first=st.best==null;best=!first;st.best=o.score;st.bestText=o.text||String(o.score)}}
       const xp=vXP(((o&&o.xp)||0)+(best?10:0));vSave();gmCheckBadges();gmSyncSoon();
       if(best)gmToast(`<span class="gmtemo">🏆</span><span><b>New best in ${esc(g.name)}!</b><br>${esc(st.bestText)}</span>`);
-      vStatusXP();return {best,first,xp}}};
+      vStatusXP();if(o&&o.ch)vRunDone(g,o.ch);return {best,first,xp}}};
 }
 // game sounds: short chiptune beeps from the Web Audio API, which start instantly (the drills' plucked clips are too slow for taps)
 const VG_SFX={eat:[[79],0,"square",.07,.06],ding:[[72,76,79],.06,"square",.1,.05],win:[[72,76,79,84],.09,"square",.16,.06],lose:[[55,50],.16,"square",.22,.06],flip:[[84],0,"triangle",.05,.12],drop:[[60],0,"triangle",.09,.16],tap:[[76],0,"triangle",.04,.1]};
@@ -3396,26 +3408,28 @@ function vBeep(k){const S=VG_SFX[k];if(!S||!vAudio())return;try{
   notes.forEach((m,i)=>{const o=vAC.createOscillator(),g=vAC.createGain(),t=t0+i*gap;o.type=type;o.frequency.value=440*Math.pow(2,(m-69)/12);
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(vAC.destination);o.start(t);o.stop(t+dur+.02)})}catch(e){}}
 function vStatusXP(){const e=vEl("vst3");if(e)e.textContent=`Game XP today: ${vXPToday()}/${VG_XPCAP}`}
-function vUnmount(){const I=GV.inst;GV.inst=null;GV.cur=null;VDLG.innerHTML="";if(!I)return;try{I.h.unmount&&I.h.unmount()}catch(e){}I.api._off()}
+function vUnmount(){const I=GV.inst;GV.inst=null;GV.cur=null;GV.mode=null;GV.run=null;GV.last=null;VDLG.innerHTML="";if(!I)return;try{I.h.unmount&&I.h.unmount()}catch(e){}I.api._off()}
 function vRender(){if(GV.cur)return;vHome()}
 function vLine(g){const s=GV.st[g.id]||{};return g.line?g.line(s):s.bestText?`Best: ${s.bestText}`:"Not played yet"}
 function vHome(){vUnmount();
   vEl("vtitle").textContent="Game Vault";
   vEl("vbar").innerHTML=`<span class="note">Pick a game. Playing earns XP, up to ${VG_XPCAP} a day.</span><span class="spacer"></span>${vMuteBtn()}`;
-  vEl("vstage").innerHTML=`<div class="vgrid">${VGAMES.map(g=>`<button class="vtile" type="button" data-vg="${g.id}">${g.icon.replace(/width="16" height="16"/,'width="40" height="40"')}<b>${esc(g.name)}</b><span class="vblurb">${esc(g.blurb)}</span><span class="vbest">${esc(vLine(g))}</span></button>`).join("")}</div>`;
-  vEl("vst1").textContent=`${VGAMES.length} games · build ${VG_VER}`;vEl("vst2").textContent=`Played: ${vPlays()}`;vStatusXP();
+  vTourRoll();vEl("vstage").innerHTML=`${vHomeExtras()}<div class="vgrid">${VGAMES.map(g=>`<button class="vtile" type="button" data-vg="${g.id}">${g.icon.replace(/width="16" height="16"/,'width="40" height="40"')}<b>${esc(g.name)}</b><span class="vblurb">${esc(g.blurb)}</span><span class="vbest">${esc(vLine(g))}</span></button>`).join("")}</div>`;
+  vEl("vst1").textContent=`${VGAMES.length} games · build ${VG_VER}`;vEl("vst2").textContent=`Played: ${vPlays()}`;vStatusXP();gmResolveNames(vEl("vstage"));
 }
 const vMuteBtn=()=>`<button class="btn" type="button" data-vmute aria-pressed="${!GV.set.mute}">Sound: ${GV.set.mute?"Off":"On"}</button>`;
-async function vOpen(id){const g=VGAMES.find(x=>x.id===id);if(!g)return;
-  if(GV.cur===id&&GV.inst)return;vUnmount();GV.cur=id;if(!GV.set.mute)vAudio();
+// mode: a challenge or the tournament to play (see vBegin)
+async function vOpen(id,mode){const g=VGAMES.find(x=>x.id===id);if(!g)return;
+  if(GV.cur===id&&GV.inst&&!mode)return;vUnmount();GV.cur=id;GV.mode=mode||null;if(!GV.set.mute)vAudio();
   vEl("vtitle").textContent=`Game Vault - ${g.name}`;
-  vEl("vbar").innerHTML=`<button class="btn" type="button" data-vhome>&lt; All games</button><span class="sep"></span><span id="vgbar" class="vgbar"></span><span class="spacer"></span>${g.lb?`<button class="btn" type="button" data-vlb>Leaderboard</button>`:""}<button class="btn" type="button" data-vhelp>How to play</button>${vMuteBtn()}`;
-  vEl("vstage").innerHTML=`<div class="vgame" id="vgroot"><div class="note">Loading ${esc(g.name)}...</div></div>`;
+  vEl("vbar").innerHTML=`<button class="btn" type="button" data-vhome>&lt; All games</button><span class="sep"></span><span id="vgbar" class="vgbar"></span><span id="vchslot" class="vgbar"></span><span class="spacer"></span>${g.lb?`<button class="btn" type="button" data-vlb>Leaderboard</button>`:""}<button class="btn" type="button" data-vhelp>How to play</button>${vMuteBtn()}`;
+  vEl("vstage").innerHTML=`<div class="vmode" id="vmode" hidden></div><div class="vgame" id="vgroot"><div class="note">Loading ${esc(g.name)}...</div></div>`;vModeBanner();
   vEl("vst1").textContent=g.name;vEl("vst2").textContent="";vStatusXP();
   try{await vLoad(id)}catch(e){if(GV.cur!==id)return;vEl("vgroot").innerHTML=`<div class="tip"><span class="ico-i" aria-hidden="true">i</span><div><b>${esc(g.name)} didn't load</b>Check your connection and try again.</div></div><div class="actions"><button class="btn default" type="button" data-vg="${id}" data-vretry>Try again</button></div>`;GV.cur=null;return}
   if(GV.cur!==id)return;
   const api=vApi(g);vEl("vgroot").innerHTML="";GV.inst={g,api,h:{}};
   try{GV.inst.h=A95G[id].mount(api)||{}}catch(e){vEl("vgroot").innerHTML=`<div class="fb no">Something went wrong starting ${esc(g.name)}.</div>`}
+  vModeBanner();vChBar();
 }
 function vHelp(){const I=GV.inst;if(!I)return;const help=A95G[I.g.id].help||"";
   VDLG.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="vhelpt"><div class="titlebar">${I.g.icon}<span class="t" id="vhelpt">How to play ${esc(I.g.name)}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">${help}<div class="actions"><button class="btn default" type="button" data-vclose>OK</button></div></div></div></div>`;
@@ -3430,7 +3444,7 @@ document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.cl
   if(b.hasAttribute("data-vclose")){VDLG.innerHTML="";return}
   if(b.hasAttribute("data-vmute")){GV.set.mute=!GV.set.mute;vSave();document.querySelectorAll("[data-vmute]").forEach(x=>{x.outerHTML=vMuteBtn()})}});
 function vScoreRows(){const rows=VGAMES.map(g=>{const s=GV.st[g.id]||{};return `<tr><td>${esc(g.name)}</td><td>${s.plays||0}</td><td>${esc(g.line?g.line(s):s.bestText||"--")}</td></tr>`}).join("");
-  return `<div class="group"><span class="legend">Game Vault</span><table class="gmtable"><thead><tr><th>Game</th><th>Played</th><th>Best</th></tr></thead><tbody>${rows}</tbody></table><div class="actions"><button class="btn" type="button" data-open="vault">${JOY16} Open the Game Vault</button></div></div>`}
+  return `<div class="group"><span class="legend">Game Vault</span><table class="gmtable"><thead><tr><th>Game</th><th>Played</th><th>Best</th></tr></thead><tbody>${rows}</tbody></table>${GV.troph&&GV.troph.length?`<div>Tournament trophies: ${GV.troph.map(t=>`${["🥇","🥈","🥉"][t.place-1]} ${esc((vGame(t.g)||{}).name||"")} <span class="sub">(week of ${esc(vWeekStart(t.w).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"}))})</span>`).join(" &middot; ")}</div>`:""}<div class="actions"><button class="btn" type="button" data-open="vault">${JOY16} Open the Game Vault</button></div></div>`}
 
 // ---- Game Vault leaderboards: each player's bests ride along in their leaderboard entry (gmPayload().games) ----
 GV.lb={g:"word",v:null};
@@ -3454,11 +3468,117 @@ function vLbShow(){const g=VGAMES.find(x=>x.id===GV.lb.g);if(!g)return;
   VDLG.innerHTML=`<div class="scrim"><div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="vlbt"><div class="titlebar">${g.icon}<span class="t" id="vlbt">${esc(g.name)} leaderboard</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body" id="vlbdlg">${vLbPanel(false)}<div class="actions"><span class="spacer"></span><button class="btn default" type="button" data-vclose>OK</button></div></div></div></div>`;
   gmResolveNames(VDLG);const f=VDLG.querySelector("#gmnm1")||VDLG.querySelector(".btn.default");if(f&&matchMedia("(pointer:fine)").matches)f.focus({preventScroll:true})}
 // new scores or names arrived: redraw whichever game board is showing
-function vLbRefresh(){if(document.getElementById("vlbdlg"))vLbShow();else if(gmScoresOpen()&&GM.tab==="lb"&&GM.lb==="games"&&!document.activeElement.closest?.(".gmnamef"))gmRenderScores()}
+function vLbRefresh(){vTourAward();vModeBanner();if(!GV.cur&&!APPS.vault.win.hidden&&!VDLG.innerHTML)vHome();if(document.getElementById("vlbdlg"))vLbShow();else if(gmScoresOpen()&&GM.tab==="lb"&&GM.lb==="games"&&!document.activeElement.closest?.(".gmnamef"))gmRenderScores()}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-vlbv],[data-vlb]");if(!b)return;
   if(b.hasAttribute("data-vlb")){GV.lb={g:GV.cur||GV.lb.g,v:null};vLbShow();return}
   GV.lb.v=b.dataset.vlbv;if(VDLG.contains(b))vLbShow();else gmRenderScores()});
 document.addEventListener("change",e=>{if(!e.target.matches||!e.target.matches("[data-vlbg]"))return;GV.lb={g:e.target.value,v:null};gmRenderScores()});
+
+// ---- Challenges and the weekly tournament: seeded runs, so two friends (or everyone, all week) play the very same game ----
+// GV.mode {type:"challenge"|"tour", g, seed, opts, ...} is set while a seeded game is open; GV.run is the run being played
+// (games start one with api.begin(opts), which returns its random generator); GV.last is the last finished run's result.
+// Games that can be raced report it through api.result({...,ch:{v,text,higher}}); v is null for a run that didn't finish.
+const VG_TOUR={flappy:{opts:{},higher:true},snake:{opts:{walls:true},higher:true},t2048:{opts:{},higher:true},anagram:{opts:{mode:"sprint"},higher:true},mines:{opts:{lv:"int"},higher:false},
+  solitaire:{opts:{draw:1},higher:false},memory:{opts:{mode:"shapes",size:"normal"},higher:false},draw:{opts:{mode:"objects"},higher:true},circle:{opts:{},higher:true},pool:{opts:{mode:"solo"},higher:false}};
+const VG_TOUR_ORDER=Object.keys(VG_TOUR);
+GV.ch=Object.assign({mine:{},sent:[],got:[]},store.get("gv.ch")||{});GV.tour=store.get("gv.tour")||null;GV.tourL=store.get("gv.tourL")||null;GV.troph=store.get("gv.troph")||[];GV.mode=null;GV.run=null;GV.last=null;
+const vChSave=()=>{store.set("gv.ch",GV.ch);store.set("gv.tour",GV.tour);store.set("gv.tourL",GV.tourL);store.set("gv.troph",GV.troph)};
+// weeks run Monday to Monday (UTC), counted from Monday 5 January 1970
+const vWeekNo=(t=Date.now())=>Math.floor((t/864e5-4)/7),vWeekStart=w=>new Date((w*7+4)*864e5);
+const vTourGame=w=>VG_TOUR_ORDER[((w%VG_TOUR_ORDER.length)+VG_TOUR_ORDER.length)%VG_TOUR_ORDER.length];
+const vBetter=(a,b,higher)=>a!=null&&(b==null||(higher?a>b:a<b));
+const vSame=(a,b)=>Object.keys(a||{}).every(k=>String((b||{})[k])===String(a[k]));
+const vLeft=ms=>{const h=Math.max(0,Math.floor(ms/36e5));return h>=24?`${Math.floor(h/24)}d ${h%24}h`:`${h}h ${Math.max(0,Math.floor(ms%36e5/6e4))}m`};
+function vTourRoll(){const w=vWeekNo();if(GV.tour&&GV.tour.w!==w){GV.tourL=GV.tour;GV.tour=null;vChSave()}}
+const vChPayload=()=>Object.entries(GV.ch.mine).slice(-20).map(([i,x])=>({i,v:x.v,t:x.t}));
+const vGame=id=>VGAMES.find(x=>x.id===id);
+// called from api.begin: a fresh random seed, or the challenge's / this week's seed
+function vBegin(g,opts){const m=GV.mode;if(m&&m.g===g.id&&!vSame(m.opts,opts)){GV.mode=null;gmToast(`<span class="gmtemo">🏁</span><span>${m.type==="tour"?"Tournament":"Challenge"} paused: the settings changed. Open it again to keep playing.</span>`)}
+  const mm=GV.mode&&GV.mode.g===g.id?GV.mode:null,seed=mm?mm.seed:Math.floor(Math.random()*4294967296);
+  GV.run={g:g.id,seed,opts:Object.assign({},opts||{})};GV.last=null;vModeBanner();vChBar();return gmRng(`vg|${g.id}|${seed}`)}
+function vRunDone(g,ch){const r=GV.run;if(!r||r.g!==g.id)return;const m=GV.mode&&GV.mode.g===g.id?GV.mode:null,i=`${g.id}:${r.seed}`,higher=ch.higher!==false;
+  GV.last={g:g.id,seed:r.seed,opts:r.opts,v:ch.v,t:ch.text,h:higher};
+  if(ch.v!=null){const old=GV.ch.mine[i];if(!old||vBetter(ch.v,old.v,higher)){delete GV.ch.mine[i];GV.ch.mine[i]={v:ch.v,t:ch.text,h:higher}}const ks=Object.keys(GV.ch.mine);if(ks.length>20)delete GV.ch.mine[ks[0]]}
+  if(m&&m.type==="tour"&&ch.v!=null){vTourRoll();if(m.w===vWeekNo()&&(!GV.tour||vBetter(ch.v,GV.tour.v,higher))){const had=!!GV.tour;GV.tour={w:m.w,g:g.id,v:ch.v,t:ch.text};if(had)gmToast(`<span class="gmtemo">🏆</span><span><b>New tournament best!</b><br>${esc(ch.text)}</span>`)}}
+  if(m&&m.type==="challenge"){const got=GV.ch.got.find(x=>x.i===i);if(got&&vBetter(ch.v,got.my,higher)){got.my=ch.v;got.myt=ch.text}}
+  vChSave();gmCheckBadges();gmSyncSoon(true);vModeBanner();vChBar();if(m&&m.type==="challenge")setTimeout(()=>vChResult(g,ch),450)}
+// ---- the strip above a seeded game, and the button in the window's menu bar ----
+function vModeBanner(){const el=vEl("vmode");if(!el)return;const m=GV.mode;if(!m||m.g!==GV.cur){el.innerHTML="";el.hidden=true;return}el.hidden=false;
+  if(m.type==="challenge"){const got=GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`)||{};
+    el.innerHTML=`<span aria-hidden="true">🏁</span><span><b>${esc(m.from)}</b> challenged you: beat <b>${esc(m.t)}</b>. It's the same game you're both playing.${got.my!=null?` Your best: <b>${esc(got.myt)}</b>${vBetter(got.my,m.v,m.h)?" (you're ahead!)":""}`:""}</span><span class="spacer"></span><button class="btn" type="button" data-vmodeoff>Stop challenge</button>`}
+  else{const rows=vTourRows(m.w),mi=rows.findIndex(r=>r.p.id===gmUid),mine=GV.tour&&GV.tour.w===m.w?GV.tour:null;
+    el.innerHTML=`<span aria-hidden="true">🏆</span><span><b>Weekly tournament</b>: the same board for everyone until Monday. Your best: <b>${mine?esc(mine.t):"--"}</b>${mi>=0&&gmDbState==="on"?` &middot; #${mi+1} of ${rows.length}`:""} &middot; ends in ${vLeft(vWeekStart(m.w+1)-Date.now())}</span><span class="spacer"></span><button class="btn" type="button" data-vtourlb>Standings</button><button class="btn" type="button" data-vmodeoff>Leave</button>`}}
+function vChBar(){const el=vEl("vchslot");if(!el)return;const L=GV.last,m=GV.mode&&GV.mode.g===GV.cur?GV.mode:null;
+  el.innerHTML=L&&L.g===GV.cur&&L.v!=null&&!(m&&m.type==="tour")?`<button class="btn default" type="button" data-vchal>🏁 ${m?"Send my score":"Challenge a friend"}</button>`:""}
+// ---- links: everything needed to replay the game goes in the address after #ch= ----
+function vChLink(o){const b=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return location.href.split("#")[0]+"#ch="+b}
+function vChParse(s){try{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const o=JSON.parse(decodeURIComponent(escape(atob(s))));
+  return o&&vGame(o.g)&&typeof o.s==="number"&&o.t!=null?o:null}catch(e){return null}}
+function vChDialog(){const L=GV.last,g=L&&vGame(L.g);if(!g)return;const m=GV.mode&&GV.mode.type==="challenge"&&GV.mode.g===L.g?GV.mode:null;
+  // in a challenge, send your best try on that game, not just the last one
+  const got=m?GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`):null,v=got&&got.my!=null?got.my:L.v,t=got&&got.my!=null?got.myt:L.t;
+  GV.chOut={g:L.g,s:L.seed,o:L.opts,v,t,h:L.h?1:0};const needName=!GV.set.nick;
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="vcht"><div class="titlebar">${g.icon}<span class="t" id="vcht">${m?`Send your score to ${esc(m.from)}`:"Challenge a friend"}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">
+    <div>Send this link to a friend. They'll get <b>the exact same ${esc(g.name)} game</b>, with your score to beat: <b>${esc(t)}</b>.</div>
+    ${needName?`<div class="row" style="align-items:center"><label for="vchname">Your name:</label><input class="gmin" id="vchname" maxlength="24" placeholder="So they know who it's from"></div>`:""}
+    <textarea class="gmta" id="vchurl" readonly rows="3" aria-label="Challenge link"></textarea>
+    <div class="actions"><span class="note" id="vchmsg" aria-live="polite"></span><span class="spacer"></span>${navigator.share?`<button class="btn default" type="button" data-vchshare>Share...</button>`:""}<button class="btn${navigator.share?"":" default"}" type="button" data-vchcopy>Copy link</button></div></div></div></div>`;
+  vChFill();const f=VDLG.querySelector("#vchname")||VDLG.querySelector(".btn.default");if(f)f.focus({preventScroll:true})}
+function vChFill(){const o=Object.assign({},GV.chOut,{n:(GV.set.nick||(vEl("vchname")||{}).value||"").trim().slice(0,24)||"A friend"});const u=vEl("vchurl");if(u)u.value=vChLink(o);return o}
+function vChSent(o){const i=`${o.g}:${o.s}`;GV.ch.sent=[{i,g:o.g,v:o.v,t:o.t,d:gmToday()},...GV.ch.sent.filter(x=>x.i!==i)].slice(0,10);vChSave();gmCheckBadges();gmSyncSoon()}
+async function vChSend(share){const o=vChFill(),url=vEl("vchurl").value,g=vGame(o.g),msg=vEl("vchmsg"),text=`🏁 Beat my ${o.t} in ${g.name} on Atlas95!`;
+  if(!GV.set.nick&&vEl("vchname")&&vEl("vchname").value.trim()){GV.set.nick=vEl("vchname").value.trim().slice(0,24);gmSave()}
+  if(share&&navigator.share){try{await navigator.share({title:"Atlas95 challenge",text,url});vChSent(o);msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(`${text} ${url}`);msg.textContent="Copied! Paste it to a friend."}catch(e){const u=vEl("vchurl");u.focus();u.select();try{document.execCommand("copy");msg.textContent="Copied!"}catch(_){msg.textContent="Select the link above and copy it."}}vChSent(o)}
+function vChResult(g,ch){const m=GV.mode;if(!m||m.type!=="challenge"||m.g!==g.id||VDLG.innerHTML)return;const got=GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`)||{};
+  const mine=got.my!=null?got.my:ch.v,mt=got.my!=null?got.myt:ch.text,won=vBetter(mine,m.v,m.h),tie=mine!=null&&mine===m.v;
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="vcrt"><div class="titlebar">${g.icon}<span class="t" id="vcrt">Challenge from ${esc(m.from)}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">
+    <div class="score"><span class="gmbigemo" aria-hidden="true">${won?"🏆":tie?"🤝":"💪"}</span><div><span class="answer">${won?`You beat ${esc(m.from)}!`:tie?"It's a tie!":`${esc(m.from)} is still ahead`}</div>${won||tie?"Send your score back so they know.":"Same game every time, so keep trying!"}</div></div>
+    <table class="gmtable"><tbody><tr class="${won?"me":""}"><td>You${got.my!=null&&ch.v!==got.my?" (best try)":""}</td><td><b>${esc(mt||"Didn't finish")}</b></td></tr><tr class="${!won&&!tie?"me":""}"><td>${esc(m.from)}</td><td><b>${esc(m.t)}</b></td></tr></tbody></table>
+    <div class="actions"><span class="spacer"></span>${mine!=null?`<button class="btn" type="button" data-vchal>Send my score</button>`:""}<button class="btn default" type="button" data-vclose>Try again</button></div></div></div></div>`;
+  const b=VDLG.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
+// opening a challenge link: remember it and jump straight into that game
+function vChOpen(o){const i=`${o.g}:${o.s}`,from=String(o.n||"A friend").slice(0,24);let got=GV.ch.got.find(x=>x.i===i);
+  if(!got){got={i,g:o.g,s:o.s,o:o.o||{},from,v:o.v,t:String(o.t).slice(0,40),h:!!o.h,d:gmToday()};GV.ch.got=[got,...GV.ch.got].slice(0,10)}else Object.assign(got,{from,v:o.v,t:String(o.t).slice(0,40)});vChSave();
+  GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);
+  showApp("vault");vOpen(o.g,{type:"challenge",g:o.g,seed:o.s,opts:o.o||{},from:got.from,v:got.v,t:got.t,h:got.h})}
+function vChBoot(){const m=/[#&]ch=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;try{history.replaceState(null,"",location.href.split("#")[0])}catch(e){}const o=vChParse(m[1]);
+  if(o)setTimeout(()=>vChOpen(o),50);else gmToast("That challenge link didn't work. Ask your friend to send it again.")}
+addEventListener("hashchange",vChBoot);
+// ---- tournament standings, from everyone's leaderboard entries (gmPayload().tour / tourL) ----
+function vTourRows(w){const g=vTourGame(w),hi=VG_TOUR[g].higher,me=gmPayload();let list=(gmPlayers||[]).slice();
+  if(gmUid&&!list.some(p=>p.id===gmUid))list.push(Object.assign({id:gmUid},me));else list=list.map(p=>p.id===gmUid?Object.assign({},p,me,{id:gmUid}):p);
+  return list.map(p=>{const e=p.tour&&p.tour.w===w?p.tour:p.tourL&&p.tourL.w===w?p.tourL:null;return e&&e.g===g&&e.v!=null?{p,v:e.v,t:e.t}:null}).filter(Boolean).sort((a,b)=>hi?b.v-a.v:a.v-b.v)}
+function vTourTable(w,max){const rows=vTourRows(w),mi=rows.findIndex(r=>r.p.id===gmUid);if(!rows.length)return `<div class="note">Nobody has played ${w===vWeekNo()?"yet. Be the first!":"that week."}</div>`;
+  let show=rows.slice(0,max).map((r,i)=>[r,i]);if(mi>=max)show.push([rows[mi],mi]);const medal=i=>["🥇","🥈","🥉"][i]||i+1;
+  return `<table class="gmtable gmlb"><tbody>${show.map(([r,i])=>`<tr class="${r.p.id===gmUid?"me":""}"><td>${medal(i)}</td><td><span data-pid="${esc(r.p.id)}" data-nick="${esc(r.p.nick||"")}">${esc(r.p.nick||"...")}</span>${r.p.id===gmUid?" (you)":""}</td><td style="text-align:right">${esc(r.t)}</td></tr>`).join("")}</tbody></table>`}
+function vTourLb(){const w=vWeekNo(),g=vGame(vTourGame(w)),pg=vGame(vTourGame(w-1));
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="vtlt"><div class="titlebar">${g.icon}<span class="t" id="vtlt">Weekly tournament: ${esc(g.name)}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">
+    <div>Everyone plays the same board all week. Your best score counts. Ends in <b>${vLeft(vWeekStart(w+1)-Date.now())}</b>; the top 3 get a trophy.</div>
+    ${gmDbState==="on"?vTourTable(w,20):`<div class="note">${gmDbState==="connecting"?"Loading the standings...":"The standings are offline right now. Your best is still saved on this device."}</div>`}
+    ${gmDbState==="on"?`<div class="group"><span class="legend">Last week: ${esc(pg.name)}</span>${vTourTable(w-1,3)}</div>`:""}
+    <div class="actions"><span class="spacer"></span>${GV.cur!==g.id||!GV.mode?`<button class="btn" type="button" data-vtour>Play</button>`:""}<button class="btn default" type="button" data-vclose>OK</button></div></div></div></div>`;gmResolveNames(VDLG)}
+// once the board has loaded, hand out last week's trophies (needs at least 2 players)
+function vTourAward(){if(gmDbState!=="on"||!gmPlayers)return;vTourRoll();const w=vWeekNo()-1;if(GV.troph.some(t=>t.w===w))return;const rows=vTourRows(w),mi=rows.findIndex(r=>r.p.id===gmUid);
+  if(rows.length<2||mi<0||mi>2)return;GV.troph.push({w,g:vTourGame(w),place:mi+1,n:rows.length});vChSave();
+  gmToast(`<span class="gmtemo">${["🥇","🥈","🥉"][mi]}</span><span><b>Tournament trophy!</b><br>You came ${gmOrd(mi+1)} of ${rows.length} in last week's ${esc(vGame(vTourGame(w)).name)}.</span>`);gmCheckBadges()}
+function vTourPlay(){const w=vWeekNo(),g=vTourGame(w);VDLG.innerHTML="";showApp("vault");vOpen(g,{type:"tour",g,w,seed:gmHash(`tour|${w}|${g}`),opts:VG_TOUR[g].opts})}
+// ---- the vault's home page: tournament card and challenges ----
+function vHomeExtras(){const w=vWeekNo(),g=vGame(vTourGame(w)),mine=GV.tour&&GV.tour.w===w?GV.tour:null,rows=gmDbState==="on"?vTourRows(w):[],mi=rows.findIndex(r=>r.p.id===gmUid);
+  const card=`<div class="vtour"><span class="vtico" aria-hidden="true">🏆</span><div class="vtmid"><b>Weekly tournament: ${esc(g.name)}</b><div class="note">Same board for everyone until Monday &middot; ends in ${vLeft(vWeekStart(w+1)-Date.now())}</div><div>Your best: <b>${mine?esc(mine.t):"--"}</b>${mi>=0?` &middot; #${mi+1} of ${rows.length}`:""}${GV.troph.length?` &middot; trophies: ${GV.troph.map(t=>["🥇","🥈","🥉"][t.place-1]).join("")}`:""}</div></div><div class="actions"><button class="btn default" type="button" data-vtour>Play</button><button class="btn" type="button" data-vtourlb>Standings</button></div></div>`;
+  const others=i=>(gmPlayers||[]).filter(p=>p.id!==gmUid&&(p.chal||[]).some(c=>c.i===i)).map(p=>({p,c:p.chal.find(c=>c.i===i)}));
+  const got=GV.ch.got.slice(0,5).map(x=>{const gg=vGame(x.g);if(!gg)return "";return `<div class="vchrow"><span>${gg.icon}</span><span class="vchmid"><b>${esc(x.from)}</b>: beat <b>${esc(x.t)}</b> in ${esc(gg.name)}${x.my!=null?` &middot; you: ${esc(x.myt)} ${vBetter(x.my,x.v,x.h)?"✓":""}`:""}</span><button class="btn" type="button" data-vchplay="${esc(x.i)}">${x.my!=null?"Again":"Play"}</button></div>`}).join("");
+  const sent=GV.ch.sent.slice(0,5).map(x=>{const gg=vGame(x.g);if(!gg)return "";const o=gmDbState==="on"?others(x.i):[];return `<div class="vchrow"><span>${gg.icon}</span><span class="vchmid">You sent <b>${esc(x.t)}</b> in ${esc(gg.name)} &middot; ${o.length?o.map(({p,c})=>`<span data-pid="${esc(p.id)}" data-nick="${esc(p.nick||"")}">${esc(p.nick||"...")}</span>: ${esc(c.t)}`).join(", "):'<span class="note">no replies yet</span>'}</span></div>`}).join("");
+  return card+(got||sent?`<div class="group vchl"><span class="legend">Challenges</span>${got}${sent}</div>`:"")}
+document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.closest("[data-vchal],[data-vchshare],[data-vchcopy],[data-vmodeoff],[data-vtour],[data-vtourlb],[data-vchplay]");if(!b)return;
+  if(b.hasAttribute("data-vchal")){VDLG.innerHTML="";vChDialog();return}
+  if(b.hasAttribute("data-vchshare")){vChSend(true);return}
+  if(b.hasAttribute("data-vchcopy")){vChSend(false);return}
+  if(b.hasAttribute("data-vmodeoff")){GV.mode=null;vModeBanner();vChBar();return}
+  if(b.hasAttribute("data-vtour")){vTourPlay();return}
+  if(b.hasAttribute("data-vtourlb")){vTourLb();return}
+  if(b.dataset.vchplay){const x=GV.ch.got.find(y=>y.i===b.dataset.vchplay);if(x)vOpen(x.g,{type:"challenge",g:x.g,seed:x.s,opts:x.o||{},from:x.from,v:x.v,t:x.t,h:x.h})}});
+document.addEventListener("input",e=>{if(e.target.id==="vchname")vChFill()});
 
 // ================= Desktop: programs, taskbar, Start menu =================
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
@@ -3661,6 +3781,7 @@ refreshDesktop();
 layout();next();
 gNext();eNext();pNext();aNext();cNext();wNext();kNext();
 gmInit();
+vChBoot();
 
 </script>
 
