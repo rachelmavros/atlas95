@@ -2561,7 +2561,11 @@ const GM_BADGES=[
   {k:"t2048",emo:"🔢",n:"2048!",d:"Make the 2048 tile",t:()=>!!GV&&((vSt("t2048").won||0)>=1||(vSt("t2048").top||0)>=2048)},
   {k:"minesint",emo:"💣",n:"Minesweeper",d:"Clear a Minesweeper board on Intermediate",t:()=>!!GV&&((vSt("mines").lvWins||{}).int||0)>=1},
   {k:"ckhard",emo:"👑",n:"King me",d:"Beat the computer at Checkers on Hard",t:()=>!!GV&&(vSt("checkers").hardW||0)>=1},
-  {k:"anag5",emo:"🔀",n:"Letter juggler",d:"Reach round 5 in Anagram Sprint",t:()=>!!GV&&(vSt("anagram").maxR||0)>=5}];
+  {k:"anag5",emo:"🔀",n:"Letter juggler",d:"Reach round 5 in Anagram Sprint",t:()=>!!GV&&(vSt("anagram").maxR||0)>=5},
+  {k:"sol1",emo:"🃏",n:"Patience pays",d:"Win a game of Solitaire",t:()=>!!GV&&(vSt("solitaire").wins||0)>=1},
+  {k:"draw80",emo:"✏️",n:"Photo finish",d:"Average 80% or better in a game of Draw from Memory",t:()=>!!GV&&Object.values(vSt("draw").bests||{}).some(v=>v>=80)},
+  {k:"poolhard",emo:"🎱",n:"Pool shark",d:"Beat the computer at Pool on Hard",t:()=>!!GV&&(vSt("pool").hardW||0)>=1},
+  {k:"poolsolo",emo:"🎯",n:"Run the table",d:"Clear the Pool table solo in 30 shots or fewer",t:()=>!!GV&&vSt("pool").solo!=null&&vSt("pool").solo<=30}];
 function gmCheckBadges(quiet){const st=GM.st;let any=false;GM_BADGES.forEach(b=>{if(!st.badges.includes(b.k)&&b.t(st)){st.badges.push(b.k);any=true;if(!quiet)gmToast(`<span class="gmtemo">${b.emo}</span><span><b>Badge unlocked: ${esc(b.n)}</b><br>${esc(b.d)}</span>`)}});if(any){gmSave();gmSyncSoon()}}
 function gmStreak(){const ds=GM.st.dailies,t=gmDayNum(gmToday());let start=ds[gmToday()]?t:(ds[gmDayStr(t-1)]?t-1:null);if(start==null)return 0;let n=0;while(ds[gmDayStr(start-n)])n++;return n}
 
@@ -3277,7 +3281,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="5";
+const VG_VER="7";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3317,6 +3321,14 @@ const VGAMES=[
     lb:{vars:[["sprint","Sprint"],["relax","Relaxed"]],head:{sprint:"Best score",relax:"Boards solved"},empty:{sprint:"No Anagram Sprint scores yet.",relax:"Nobody has solved a relaxed board yet."},
       board:s=>s.best!=null||s.solved?{s:s.best,r:s.bestR||1,n:s.solved||0}:null,
       row:(x,v)=>v==="relax"?(x.n?{k:[-x.n],show:`${x.n} board${x.n===1?"":"s"}`}:null):x.s!=null?{k:[-x.s,-(x.r||1)],show:`${x.s.toLocaleString("en-US")} <span class="sub">(round ${x.r||1})</span>`}:null}},
+  {id:"solitaire",name:"Solitaire",blurb:"The classic card game. Build each suit from Ace to King. Draw 1 or Draw 3.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.5" width="8" height="11" rx="1" fill="#000080" stroke="#000"/><path d="M2.5 3l5 8M7.5 3l-5 8" stroke="#1084d0"/><rect x="6.5" y="3.5" width="8.5" height="11.5" rx="1" fill="#fff" stroke="#000"/><path d="M10.75 6.6c-.9-1.3-2.6-.4-1.9.9.4.8 1.9 1.9 1.9 1.9s1.5-1.1 1.9-1.9c.7-1.3-1-2.2-1.9-.9z" fill="#c00000"/><path d="M8 13.6h2" stroke="#000" stroke-width=".8"/></svg>',
+    line:s=>{const b=s.bests||{};return s.wins?`Won ${s.wins}${b.d1!=null?` · best ${gmFmtT(b.d1)}`:b.d3!=null?` · best ${gmFmtT(b.d3)} (Draw 3)`:""}`:"Not won yet"},
+    lb:{vars:[["d1","Draw 1"],["d3","Draw 3"]],head:"Fastest win",empty:"Nobody has won this way yet.",board:s=>s.bests&&Object.keys(s.bests).length?s.bests:null,row:(x,v)=>x[v]!=null?{k:[x[v]],show:gmFmtT(x[v])}:null}},
+  {id:"draw",name:"Draw from Memory",blurb:"A picture flashes for 3 seconds. Then draw it from memory. Shapes or country outlines.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M3 11.5L6 4l3 7.5M4.2 8.8h3.6" fill="none" stroke="#7fd67f" stroke-width="1.6" stroke-linecap="round"/><path d="M10.5 3.5l2.5 2.5-5 5-3 .6.6-3z" fill="#ffd800" stroke="#000" stroke-width=".7" stroke-linejoin="round"/><path d="M10.5 3.5l2.5 2.5" stroke="#c00000" stroke-width="1.4"/></svg>',
+    line:s=>{const b=s.bests||{};const parts=[b.shapes!=null?`Shapes ${b.shapes.toFixed(1)}%`:"",b.countries!=null?`Countries ${b.countries.toFixed(1)}%`:""].filter(Boolean);return parts.length?`Best: ${parts.join(" · ")}`:"Not played yet"},
+    lb:{vars:[["shapes","Shapes"],["countries","Countries"]],head:"Best average",empty:"No drawings scored yet.",board:s=>s.bests&&Object.keys(s.bests).length?s.bests:null,row:(x,v)=>x[v]!=null?{k:[-x[v]],show:`${(+x[v]).toFixed(1)}%`}:null}},
   {id:"circle",name:"Perfect Circle",blurb:"Draw a circle freehand. How close to perfect can you get?",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#000"/><path d="M8 2.6c3.2-.1 5.4 2.3 5.3 5.4-.1 3-2.5 5.3-5.4 5.3S2.6 11 2.7 7.9C2.8 5.3 4.6 3 7.6 2.9" fill="none" stroke="#000080" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r=".9" fill="#c00000"/></svg>',
     line:s=>s.best!=null?`Best: ${s.best.toFixed(1)}%`:"Not played yet",
@@ -3326,6 +3338,12 @@ const VGAMES=[
     lb:{vars:[["normal","Normal"],["easy","Easy"],["hard","Hard"]],head:"Fewest moves",empty:"No wins at this size yet.",
       board:s=>{const m={};Object.entries(s.bests||{}).forEach(([k,x])=>{const [md,sz]=k.split("|"),b=m[sz];if(!b||x.moves<b.m||x.moves===b.m&&x.ms<b.ms)m[sz]={m:x.moves,ms:x.ms,md}});return Object.keys(m).length?m:null},
       row:(x,v)=>{const b=x[v];return b?{k:[b.m,b.ms],show:`${b.m} moves &middot; ${gmFmtT(b.ms)} <span class="sub">(${esc(VG_MEMMODE[b.md]||"")})</span>`}:null}}},
+  {id:"pool",name:"Pool",blurb:"8-ball against the computer or a friend, or clear the table solo. Pull back to aim.",
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="3" width="15" height="10" rx="1" fill="#5a3214" stroke="#000"/><rect x="2" y="4.5" width="12" height="7" fill="#0a7a3a"/><circle cx="2.3" cy="4.8" r=".9" fill="#000"/><circle cx="13.7" cy="4.8" r=".9" fill="#000"/><circle cx="2.3" cy="11.2" r=".9" fill="#000"/><circle cx="13.7" cy="11.2" r=".9" fill="#000"/><circle cx="5.5" cy="8" r="1.4" fill="#fff" stroke="#000" stroke-width=".4"/><circle cx="10" cy="7.2" r="1.4" fill="#111" stroke="#000" stroke-width=".4"/><circle cx="11.3" cy="9.2" r="1.4" fill="#f5c400" stroke="#000" stroke-width=".4"/><path d="M.8 14.8L4.5 9.2" stroke="#d9b77a" stroke-width="1.1"/></svg>',
+    line:s=>[s.w||s.l?`Won ${s.w||0} · Lost ${s.l||0}`:"",s.solo!=null?`Solo best ${s.solo} shots`:""].filter(Boolean).join(" · ")||"Not played yet",
+    lb:{vars:[["vs","vs Computer"],["solo","Solo"]],head:{vs:"Wins vs computer",solo:"Fewest shots"},empty:{vs:"Nobody has beaten the computer yet.",solo:"Nobody has cleared the table yet."},
+      board:s=>{const o={},w=VG_LEVELS3(s);if(w)o.w=w;if(s.solo!=null)o.solo=s.solo;return Object.keys(o).length?o:null},
+      row:(x,v)=>v==="solo"?(x.solo!=null?{k:[x.solo],show:`${x.solo} shots`}:null):x.w?VG_LEVELROW(x.w):null}},
   {id:"connect4",name:"Connect Four",blurb:"Drop discs and line up four in a row before the computer does.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="2.5" width="15" height="12" fill="#1040c0" stroke="#000"/><g stroke="#000" stroke-width=".6"><circle cx="3.5" cy="5.5" r="1.6" fill="#fff"/><circle cx="8" cy="5.5" r="1.6" fill="#fff"/><circle cx="12.5" cy="5.5" r="1.6" fill="#ffd800"/><circle cx="3.5" cy="11" r="1.6" fill="#e00000"/><circle cx="8" cy="11" r="1.6" fill="#ffd800"/><circle cx="12.5" cy="11" r="1.6" fill="#e00000"/></g></svg>',
     line:s=>s.w||s.l||s.d?`Won ${s.w||0} · Lost ${s.l||0}${s.d?` · Drew ${s.d}`:""}`:"Not played yet",
@@ -3359,7 +3377,7 @@ function vApi(g){
     sound(k){if(!GV.set.mute)vBeep(k)},
     toast:gmToast,
     share(text,btn){GM.share.vg=text;gmShare("vg",btn)},
-    flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,
+    flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,outline:vOutline,
     // a finished game: o={score, higher (default true), text, xp}. Returns {best, first, xp}.
     result(o){st.plays=(st.plays||0)+1;let best=false,first=false;
       if(o&&o.score!=null){const lower=o.higher===false,better=st.best==null||(lower?o.score<st.best:o.score>st.best);
@@ -3377,6 +3395,11 @@ function vBeep(k){const S=VG_SFX[k];if(!S||!vAudio())return;try{
   const [notes,gap,type,dur,vol]=S,t0=vAC.currentTime+.005;
   notes.forEach((m,i)=>{const o=vAC.createOscillator(),g=vAC.createGain(),t=t0+i*gap;o.type=type;o.frequency.value=440*Math.pow(2,(m-69)/12);
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(vAC.destination);o.start(t);o.stop(t+dur+.02)})}catch(e){}}
+// a country's mainland outline as an SVG path in a 100x100 box (largest polygon, holes dropped), for drawing games
+function vOutline(id){try{const f=featById.get(id);if(!f)return null;let g=f.geometry;
+  if(g.type==="MultiPolygon"){let best=null,ba=-1;g.coordinates.forEach(poly=>{let a=d3.geoArea({type:"Polygon",coordinates:poly});if(a>2*Math.PI)a=4*Math.PI-a;if(a>ba){ba=a;best=poly}});g={type:"Polygon",coordinates:best}}
+  let ring=g.coordinates[0];if(d3.geoArea({type:"Polygon",coordinates:[ring]})>2*Math.PI)ring=ring.slice().reverse();
+  const feat={type:"Feature",geometry:{type:"Polygon",coordinates:[ring]}};return d3.geoPath(d3.geoMercator().fitExtent([[8,8],[92,92]],feat))(feat)}catch(e){return null}}
 function vStatusXP(){const e=vEl("vst3");if(e)e.textContent=`Game XP today: ${vXPToday()}/${VG_XPCAP}`}
 function vUnmount(){const I=GV.inst;GV.inst=null;GV.cur=null;VDLG.innerHTML="";if(!I)return;try{I.h.unmount&&I.h.unmount()}catch(e){}I.api._off()}
 function vRender(){if(GV.cur)return;vHome()}
@@ -3446,7 +3469,7 @@ document.addEventListener("change",e=>{if(!e.target.matches||!e.target.matches("
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
 const GUITAR16=document.querySelector("#gwin .titlebar svg").outerHTML;
 const FLASK16=document.querySelector("#ewin .titlebar svg").outerHTML;
-const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},vault:{label:"Game Vault",sub:"Snake, Checkers, 2048 & more",icon:JOY16,win:document.getElementById("vwin")},trivia:{label:"Trivia Board",sub:"Pick a tile, win points",icon:document.querySelector("#twin .titlebar svg").outerHTML,win:document.getElementById("twin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
+const APPS={atlas:{label:"Atlas Drill",sub:"Geography",icon:GLOBE16,win:document.getElementById("win")},guitar:{label:"Fretboard Drill",sub:"Guitar",icon:GUITAR16,win:document.getElementById("gwin")},elements:{label:"Element Drill",sub:"Periodic table",icon:FLASK16,win:document.getElementById("ewin")},phrases:{label:"Language Drill",sub:"Words & phrases",icon:document.querySelector("#pwin .titlebar svg").outerHTML,win:document.getElementById("pwin")},anatomy:{label:"Anatomy Drill",sub:"Bones, muscles & brain",icon:document.querySelector("#awin .titlebar svg").outerHTML,win:document.getElementById("awin")},civics:{label:"Civics Drill",sub:"US presidents & amendments",icon:document.querySelector("#cwin .titlebar svg").outerHTML,win:document.getElementById("cwin")},words:{label:"Medical Terms Drill",sub:"Medical terminology",icon:document.querySelector("#wwin .titlebar svg").outerHTML,win:document.getElementById("wwin")},stars:{label:"Constellation Drill",sub:"Night sky",icon:document.querySelector("#kwin .titlebar svg").outerHTML,win:document.getElementById("kwin")},vault:{label:"Game Vault",sub:"Solitaire, Pool, Snake & more",icon:JOY16,win:document.getElementById("vwin")},trivia:{label:"Trivia Board",sub:"Pick a tile, win points",icon:document.querySelector("#twin .titlebar svg").outerHTML,win:document.getElementById("twin")},scores:{label:"Scoreboard",sub:"Stats, badges & leaderboard",icon:document.querySelector("#swin .titlebar svg").outerHTML,win:document.getElementById("swin")}};
 const saved=store.get("ad.apps")||{};
 let activeApp=APPS[saved.active]?saved.active:"atlas";
 Object.keys(APPS).forEach(k=>{APPS[k].open=false;APPS[k].min=false});
