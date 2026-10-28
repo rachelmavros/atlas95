@@ -3301,7 +3301,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="21";
+const VG_VER="22";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3581,19 +3581,23 @@ const vBase=()=>location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,"");
 const vPaths=()=>!!window.ATLAS95_SHARE_PATHS;
 function vLongLink(gid,o){const h=typeof o==="string"?"_"+o:vChLink(o).split("#ch=")[1];return (vPaths()?vBase()+"g/"+gid:location.href.split("#")[0])+"#"+gid+"="+h}
 let vShareOK=true;
-async function vShareLink(gid,o,name){
+async function vShareLink(gid,o,name,pv){
   if(gmSbc&&vShareOK){try{const id=Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"[b%56]).join("");
-    const {error}=await gmSbc.from("shares").insert({id,game:gid,data:{n:String(name||"").slice(0,24),v:o}});
+    const {error}=await gmSbc.from("shares").insert({id,game:gid,data:Object.assign({n:String(name||"").slice(0,24),v:o},pv||{})});
     if(!error)return (vPaths()?vBase()+"s/":location.href.split("#")[0]+"#s=")+id;
     // no table yet (or no permission): stop trying this session
     if(/PGRST20|42P01|42501|does not exist|schema cache|permission/i.test(`${error.code} ${error.message}`))vShareOK=false}catch(e){}}
-  return vLongLink(gid,o)}
+  return gid==="ch"?vChLongLink(o):vLongLink(gid,o)}
+// a challenge's long link goes under /g/<game> so its preview still names the game
+const vChLongLink=o=>(vPaths()?vBase()+"g/"+o.g:location.href.split("#")[0])+"#ch="+vChLink(o).split("#ch=")[1];
 async function vShareOpen(id){let r=null;
   try{if(GM_SB&&GM_SB.url){const res=await fetch(`${GM_SB.url}/rest/v1/shares?id=eq.${encodeURIComponent(id)}&select=game,data`,{headers:{apikey:GM_SB.anonKey}});const a=await res.json();r=Array.isArray(a)?a[0]:null}}catch(e){}
+  if(r&&r.game==="ch"&&r.data){const o=vChOk(r.data.v);if(o){setTimeout(()=>vChOpen(o),50);return}}
   const g=r&&vGame(r.game);if(!g||!r.data||r.data.v==null){gmToast("That link didn't work. Ask your friend to send it again.");return}vLinkOpen(g,r.data.v)}
 function vLinkOpen(g,o){setTimeout(()=>{GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);showApp("vault");vOpen(g.id,{type:"link",g:g.id,seed:0,opts:{},data:o})},50)}
 function vChParse(s){try{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const o=JSON.parse(decodeURIComponent(escape(atob(s))));
-  return o&&vGame(o.g)&&typeof o.s==="number"&&o.t!=null?o:null}catch(e){return null}}
+  return vChOk(o)}catch(e){return null}}
+function vChOk(o){return o&&vGame(o.g)&&typeof o.s==="number"&&o.t!=null?o:null}
 function vChDialog(){const L=GV.last,g=L&&vGame(L.g);if(!g)return;const m=GV.mode&&GV.mode.type==="challenge"&&GV.mode.g===L.g?GV.mode:null;
   // in a challenge, send your best try on that game, not just the last one
   const got=m?GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`):null,v=got&&got.my!=null?got.my:L.v,t=got&&got.my!=null?got.myt:L.t;
@@ -3604,11 +3608,15 @@ function vChDialog(){const L=GV.last,g=L&&vGame(L.g);if(!g)return;const m=GV.mod
     <textarea class="gmta" id="vchurl" readonly rows="3" aria-label="Challenge link"></textarea>
     <div class="actions"><span class="note" id="vchmsg" aria-live="polite"></span><span class="spacer"></span>${navigator.share?`<button class="btn default" type="button" data-vchshare>Share...</button>`:""}<button class="btn${navigator.share?"":" default"}" type="button" data-vchcopy>Copy link</button></div></div></div></div>`;
   vChFill();const f=VDLG.querySelector("#vchname")||VDLG.querySelector(".btn.default");if(f)f.focus({preventScroll:true})}
-function vChFill(){const o=Object.assign({},GV.chOut,{n:(GV.set.nick||(vEl("vchname")||{}).value||"").trim().slice(0,24)||"A friend"});const u=vEl("vchurl");if(u)u.value=vChLink(o);return o}
+// the link is made as soon as the dialog opens: saving a short link takes a moment, and phones only allow sharing straight after a tap
+function vChFill(){const o=Object.assign({},GV.chOut,{n:(GV.set.nick||(vEl("vchname")||{}).value||"").trim().slice(0,24)||"A friend"}),key=JSON.stringify(o),u=vEl("vchurl");
+  if(!GV.chPrep||GV.chPrep.key!==key){const g=vGame(o.g),p=vShareLink("ch",o,o.n,{t:`🏁 ${o.n} challenged you to ${g.name}`,d:`Beat ${o.t} in the exact same game of ${g.name}. Atlas95 Game Vault.`});
+    GV.chPrep={key,p};if(u)u.value="Making your link...";p.then(url=>{if(GV.chPrep&&GV.chPrep.key===key&&vEl("vchurl"))vEl("vchurl").value=url})}
+  return o}
 function vChSent(o){const i=`${o.g}:${o.s}`;GV.ch.sent=[{i,g:o.g,v:o.v,t:o.t,d:gmToday()},...GV.ch.sent.filter(x=>x.i!==i)].slice(0,10);vChSave();gmCheckBadges();gmSyncSoon()}
-async function vChSend(share){const o=vChFill(),url=vEl("vchurl").value,g=vGame(o.g),msg=vEl("vchmsg"),text=`🏁 Beat my ${o.t} in ${g.name} on Atlas95!`;
+async function vChSend(share){const o=vChFill(),url=await GV.chPrep.p,g=vGame(o.g),msg=vEl("vchmsg"),text=`🏁 Beat my ${o.t} in ${g.name} on Atlas95!`;
   if(!GV.set.nick&&vEl("vchname")&&vEl("vchname").value.trim()){GV.set.nick=vEl("vchname").value.trim().slice(0,24);gmSave()}
-  if(share&&navigator.share){try{await navigator.share({title:"Atlas95 challenge",text,url});vChSent(o);msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
+  if(share&&navigator.share){try{await navigator.share({text:`${text}\n${url}`});vChSent(o);msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(`${text} ${url}`);msg.textContent="Copied! Paste it to a friend."}catch(e){const u=vEl("vchurl");u.focus();u.select();try{document.execCommand("copy");msg.textContent="Copied!"}catch(_){msg.textContent="Select the link above and copy it."}}vChSent(o)}
 function vChResult(g,ch){const m=GV.mode;if(!m||m.type!=="challenge"||m.g!==g.id||VDLG.innerHTML)return;const got=GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`)||{};
   const mine=got.my!=null?got.my:ch.v,mt=got.my!=null?got.myt:ch.text,won=vBetter(mine,m.v,m.h),tie=mine!=null&&mine===m.v;
@@ -3664,7 +3672,7 @@ document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.cl
   if(b.hasAttribute("data-vtour")){vTourPlay();return}
   if(b.hasAttribute("data-vtourlb")){vTourLb();return}
   if(b.dataset.vchplay){const x=GV.ch.got.find(y=>y.i===b.dataset.vchplay);if(x)vOpen(x.g,{type:"challenge",g:x.g,seed:x.s,opts:x.o||{},from:x.from,v:x.v,t:x.t,h:x.h})}});
-document.addEventListener("input",e=>{if(e.target.id==="vchname")vChFill()});
+let vChT=0;document.addEventListener("input",e=>{if(e.target.id==="vchname"){clearTimeout(vChT);vChT=setTimeout(vChFill,600)}});
 
 // ================= Desktop: programs, taskbar, Start menu =================
 const GLOBE16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#3a6ea5" stroke="#000"/><path d="M4 4.5c1.5-.5 2.5.5 3 1.5s-1 2-.5 3 2 .5 2 2-1 2.5-2 2.5M10 2.5c0 1.5 1.5 2 2.5 2.5s1 2 .5 3" fill="none" stroke="#7fd67f" stroke-width="2"/></svg>';
