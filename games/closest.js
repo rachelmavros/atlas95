@@ -125,24 +125,44 @@ function gen(api,kind,rnd){const pick=a=>a[Math.floor(rnd()*a.length)];
 function build(api,rnd){const kinds=api.shuffle(["pop","area","pres","elem"],rnd).slice(0,3),years=BANK.filter(b=>b[2]==="y"),nums=BANK.filter(b=>b[2]==="n");
   const bank=api.shuffle(nums,rnd).slice(0,3).concat(api.shuffle(years,rnd).slice(0,1)).map(b=>({q:b[0],a:b[1],k:b[2],u:b[3]||"",cat:b[2]==="y"?"History":"Numbers"}));
   return api.shuffle(kinds.map(k=>gen(api,k,rnd)).concat(bank),rnd)}
+// a question set is a key: "d<date>" (that day's Daily) or "p<seed>" (a practice deal); friends play the same set from a link
+const rngFor=(api,key)=>api.rng(key[0]==="d"?"closest|"+key.slice(1):"closest-p|"+key.slice(1));
+const totalOf=(qs,g)=>qs.reduce((a,q,i)=>a+(g[i]!=null?score(q,g[i]):0),0);
+const emo=p=>p>=90?"🎯":p>=70?"🟢":p>=40?"🟡":p>0?"🟠":"🔴";
 A95G.closest={
 help:`<div>Seven questions with a number for an answer: heights, distances, populations, years. Nobody expects you to know them exactly. Just get <b>close</b>.</div>
 <ul class="factlist"><li>Exactly right is 100 points. Off by half or double is 50. Off by 4 times or more is 0.</li><li>Years lose 2 points for every year you're off.</li>
-<li>Type big numbers however you like: <b>2,500,000</b>, <b>2.5m</b> or <b>2.5 million</b> all work. Or tap <b>thousand</b>, <b>million</b> or <b>billion</b>.</li><li>The <b>Daily</b> game is the same for everyone today. <b>Practice</b> deals new questions every time.</li></ul>`,
+<li>Type big numbers however you like: <b>2,500,000</b>, <b>2.5m</b> or <b>2.5 million</b> all work. Or tap <b>thousand</b>, <b>million</b> or <b>billion</b>.</li><li>The <b>Daily</b> game is the same for everyone today. <b>Practice</b> deals new questions every time.</li>
+<li><b>Challenge a friend:</b> after a game, send the link. Your friend plays the same seven questions, sees your answer after each one, and can send theirs back so you see how they did, question by question.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.days=st.days||{};const mo=api.modeOpts();if(mo)st.mode="practice";st.mode=st.mode==="practice"?"practice":"daily";
-  const today=api.today();let G,mul=1;
+  api.css(CSS+`
+.cw-vs{font-size:13px;color:#000080;font-weight:700;text-align:center}
+.cw-sum th{font-size:11px;text-align:right;padding:2px 4px;border-bottom:2px solid #000}.cw-sum th:first-child{text-align:left}
+.cw-sum td.cw-p{text-align:right;font-weight:700;white-space:nowrap}.cw-sum td.win{background:#c8f0c8}
+.cw-fr{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.cw-fr .btn[aria-pressed="true"]{box-shadow:var(--sunken);background:var(--hi);font-weight:700}
+.cw-name{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+.cw-name input{font:inherit;padding:3px 6px;box-shadow:var(--sunken);border:0;background:#fff;width:11em}`);
+  const st=api.stats;st.days=st.days||{};st.sets=st.sets||{};st.vs=st.vs||{};const link=api.linkData(),mo=link?null:api.modeOpts();if(mo)st.mode="practice";st.mode=st.mode==="practice"?"practice":"daily";
+  const today=api.today();let G,mul=1,fi=0;
   api.bar.innerHTML=`<select class="sel95" data-cwmode aria-label="Mode"><option value="daily"${st.mode==="daily"?" selected":""}>Daily</option><option value="practice"${st.mode==="practice"?" selected":""}>Practice</option></select><button class="btn" type="button" data-cw="new">New game</button>`;
   api.root.innerHTML=`<div class="cw-wrap"><div class="cw-head"></div><div class="cw-main"></div></div>`;
   const main=api.root.querySelector(".cw-main");
-  function fresh(){api.bar.querySelector('[data-cw="new"]').hidden=st.mode==="daily";const daily=st.mode==="daily",rnd=daily?api.rng("closest|"+today):api.begin({});
-    G={daily,qs:build(api,rnd),i:0,g:[],pts:[],done:false};
-    if(daily&&st.days[today]){const d=st.days[today];G.g=d.g;G.pts=d.pts;G.i=QN;G.done=true;over();return}ask()}
+  const mine=key=>st.sets[key]||(key[0]==="d"&&st.days[key.slice(1)]&&st.days[key.slice(1)].g?{g:st.days[key.slice(1)].g}:null);
+  const friends=key=>st.vs[key]||[];
+  function fresh(){api.bar.querySelector('[data-cw="new"]').hidden=st.mode==="daily";
+    // a vault challenge or tournament run deals from the vault's seed; otherwise the set key does
+    if(mo){G={key:null,qs:build(api,api.begin({})),vault:true};begin();return}
+    play(st.mode==="daily"?"d"+today:"p"+Math.floor(Math.random()*4294967296).toString(36),null)}
+  function play(key,vs){G={key,qs:build(api,rngFor(api,key)),vs,daily:key==="d"+today};fi=0;begin()}
+  function begin(){Object.assign(G,{i:0,g:[],pts:[],done:false});const m=G.key&&mine(G.key);
+    if(m){G.g=m.g.slice();G.pts=G.qs.map((q,i)=>score(q,G.g[i]));G.i=QN;G.done=true;over();return}ask()}
   function tot(){return G.pts.reduce((a,b)=>a+b,0)}
-  function head(){api.root.querySelector(".cw-head").innerHTML=`<div><small>QUESTION</small><b>${Math.min(G.i+1,QN)}/${QN}</b></div><div><small>SCORE</small><b>${tot()}</b></div>`;
-    api.status(G.daily?`Daily · ${api.niceDate(today)}`:"Practice",st.best!=null?`Best: ${st.best} / ${QN*100}`:"")}
+  function label(){return G.vault?"Challenge":G.daily?`Daily · ${api.niceDate(today)}`:G.key[0]==="d"?`Daily · ${api.niceDate(G.key.slice(1))}`:"Practice"}
+  function head(){api.root.querySelector(".cw-head").innerHTML=`<div><small>QUESTION</small><b>${Math.min(G.i+1,QN)}/${QN}</b></div><div><small>SCORE</small><b>${tot()}</b></div>${G.vs&&!G.done?`<div><small>${api.esc(G.vs.n.toUpperCase())}</small><b>${totalOf(G.qs.slice(0,G.i),G.vs.g)}</b></div>`:""}`;
+    api.status(label(),st.best!=null?`Best: ${st.best} / ${QN*100}`:"")}
   function ask(){const q=G.qs[G.i],big=q.k==="n"&&q.a>=2e4;mul=1;head();
-    main.innerHTML=`<div class="cw-cat">${api.esc(q.cat)}</div><div class="cw-q">${api.esc(q.q)}</div>
+    main.innerHTML=`${G.vs&&G.i===0?`<div class="cw-vs">🏁 ${api.esc(G.vs.n)} scored ${totalOf(G.qs,G.vs.g)} on these questions. Can you get closer?</div>`:""}<div class="cw-cat">${api.esc(q.cat)}</div><div class="cw-q">${api.esc(q.q)}</div>
       <form class="cw-in" data-cwf><input id="cwg" type="text" inputmode="${big?"text":"decimal"}" autocomplete="off" enterkeyhint="done" aria-label="Your guess" placeholder="${q.k==="y"?"Year":"Your guess"}"><span class="cw-unit">${api.esc(q.u||"")}</span><button class="btn default" type="submit">Guess</button></form>
       ${big?`<div class="cw-mul" role="group" aria-label="Multiply by">${[[1e3,"thousand"],[1e6,"million"],[1e9,"billion"]].map(([v,l])=>`<button class="btn" type="button" data-cwm="${v}" aria-pressed="false">${l}</button>`).join("")}</div>`:""}
       <div class="cw-prev" aria-live="polite"></div>`;
@@ -158,29 +178,50 @@ mount(api){
     if(q.k!=="n"){const d=Math.abs(g-q.a);return `${d.toLocaleString("en-US")} ${q.k==="y"?(d===1?"year":"years"):""} too ${g<q.a?(q.k==="y"?"early":"low"):(q.k==="y"?"late":"high")}`.replace("  "," ")}
     if(g<=0)return "Too low";const r=Math.max(g,q.a)/Math.min(g,q.a);return r<1.1?`Within ${Math.max(1,Math.round((r-1)*100))}%`:`${r<10?r.toFixed(1):Math.round(r).toLocaleString("en-US")}× too ${g<q.a?"low":"high"}`}
   function guess(){const g=val(),q=G.qs[G.i];if(!isFinite(g)){const p=main.querySelector(".cw-prev");if(p)p.textContent="Type a number first.";return}
-    const pts=score(q,g);G.g.push(g);G.pts.push(pts);G.i++;head();if(pts===100)st.bulls=(st.bulls||0)+1;api.sound(pts>=90?"win":pts>=50?"ding":pts>0?"tap":"lose");
+    const pts=score(q,g),i=G.i;G.g.push(g);G.pts.push(pts);G.i++;head();if(pts===100)st.bulls=(st.bulls||0)+1;api.sound(pts>=90?"win":pts>=50?"ding":pts>0?"tap":"lose");
+    const fg=G.vs&&G.vs.g[i],fp=fg!=null?score(q,fg):null;
     main.innerHTML=`<div class="cw-cat">${api.esc(q.cat)}</div><div class="cw-q">${api.esc(q.q)}</div>
       <div class="cw-res"><div class="cw-big">${fmt(q.a,q)} ${api.esc(q.u||"")}</div>You said ${fmt(g,q)}. ${off(q,g)} &middot; <b>+${pts}</b></div>${line(q,g)}
+      ${fp!=null?`<div class="cw-vs">${api.esc(G.vs.n)} said ${fmt(fg,q)} &middot; +${fp} ${fp>pts?"(they win this one)":fp<pts?"(you win this one)":"(tie)"}</div>`:""}
       <div class="cw-in"><button class="btn default" type="button" data-cw="next">${G.i<QN?"Next question &gt;":"See my score &gt;"}</button></div>`;
     const nb=main.querySelector('[data-cw="next"]');if(matchMedia("(pointer:fine)").matches)nb.focus({preventScroll:true})}
   function finish(){const t=tot(),prev=st.best,nb=prev==null||t>prev;if(nb)st.best=t;st.games=(st.games||0)+1;G.done=true;
+    if(G.key){st.sets[G.key]={g:G.g,t:today};const ks=Object.keys(st.sets);if(ks.length>40)ks.slice(0,ks.length-40).forEach(k=>delete st.sets[k])}
     if(G.daily&&!st.days[today])st.days[today]={s:t,g:G.g,pts:G.pts};
-    const r=api.result(G.daily?{xp:Math.round(t/50)+5}:{xp:Math.round(t/70),ch:{v:t,text:`${t} points`,higher:true}});
+    const r=api.result(G.daily?{xp:Math.round(t/50)+5}:{xp:Math.round(t/70),ch:G.vault?{v:t,text:`${t} points`,higher:true}:null});
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Closest Wins!</b><br>${t} / ${QN*100} points</span>`);api.sound("win");over(r)}
-  function over(r){head();const t=tot();
-    main.innerHTML=`<div class="cw-res"><div class="cw-big">${t} / ${QN*100}</div>${r&&r.xp?`+${r.xp} XP`:""}</div>
-      <table class="cw-sum">${G.qs.map((q,i)=>`<tr><td>${api.esc(q.q)}<br><span class="note">Answer ${fmt(q.a,q)} ${api.esc(q.u||"")} &middot; you ${G.g[i]!=null?fmt(G.g[i],q):"-"}</span></td><td>${G.pts[i]!=null?G.pts[i]:"-"}</td></tr>`).join("")}</table>
-      <div class="cw-in">${G.daily?`<button class="btn default" type="button" data-cw="share">Share...</button><span class="note">New questions tomorrow.</span>`:`<button class="btn default" type="button" data-cw="new">Play again</button>`}</div>`}
-  function share(btn){const d=st.days[today];if(!d)return;const e=p=>p>=90?"🎯":p>=70?"🟢":p>=40?"🟡":p>0?"🟠":"🔴";
-    api.share(`Atlas95 Closest Wins · ${api.niceDate(today)}\n${d.s} / ${QN*100}\n${d.pts.map(e).join("")}`,btn)}
+  // the results table; with friends on the same set, their answers sit next to yours
+  function over(r){head();const t=tot(),fr=G.key?friends(G.key):[],f=fr[Math.min(fi,fr.length-1)]||null,ft=f?totalOf(G.qs,f.g):0;
+    const verdict=f?(t>ft?`You beat ${api.esc(f.n)}! 🏆`:t<ft?`${api.esc(f.n)} wins this one.`:`It's a tie with ${api.esc(f.n)}!`):"";
+    main.innerHTML=`<div class="cw-res"><div class="cw-big">${t}${f?` <span style="font-size:20px">vs</span> ${ft}`:""} <span style="font-size:16px">/ ${QN*100}</span></div>${verdict?`<b>${verdict}</b><br>`:""}${r&&r.xp?`+${r.xp} XP`:""}</div>
+      ${fr.length>1?`<div class="cw-fr" role="group" aria-label="Compare with">${fr.map((x,i)=>`<button class="btn" type="button" data-cwfr="${i}" aria-pressed="${x===f}">${api.esc(x.n)} ${totalOf(G.qs,x.g)}</button>`).join("")}</div>`:""}
+      <table class="cw-sum"><tr><th>Question</th><th>You</th>${f?`<th>${api.esc(f.n)}</th>`:""}</tr>${G.qs.map((q,i)=>{const mp=G.pts[i],fp=f&&f.g[i]!=null?score(q,f.g[i]):null;
+        return `<tr><td>${api.esc(q.q)}<br><span class="note">Answer ${fmt(q.a,q)} ${api.esc(q.u||"")} &middot; you ${G.g[i]!=null?fmt(G.g[i],q):"-"}${f?` &middot; ${api.esc(f.n)} ${f.g[i]!=null?fmt(f.g[i],q):"-"}`:""}</span></td><td class="cw-p${f&&mp>fp?" win":""}">${mp!=null?mp:"-"}</td>${f?`<td class="cw-p${fp>mp?" win":""}">${fp!=null?fp:"-"}</td>`:""}</tr>`}).join("")}</table>
+      ${G.key&&!api.nick()?`<div class="cw-name"><label for="cwnm">Your name:</label><input id="cwnm" maxlength="24" autocomplete="nickname" placeholder="So friends know it's you"></div>`:""}
+      <div class="cw-in">${G.key?`<button class="btn default" type="button" data-cw="send">${f?`Send my answers to ${api.esc(f.n)}...`:"Challenge a friend..."}</button>`:""}${!G.daily&&!G.vault?`<button class="btn" type="button" data-cw="new">New questions</button>`:""}</div>
+      <div class="cw-prev" aria-live="polite">${G.daily?"New questions tomorrow.":""}</div>`}
+  async function send(btn){const ni=main.querySelector("#cwnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const name=api.nick()||"A friend",t=tot(),fr=friends(G.key),f=fr[Math.min(fi,fr.length-1)];
+    const url=api.link({k:G.key,n:name,g:G.g.map(v=>+(+v).toPrecision(6))});
+    const text=`Atlas95 Closest Wins${G.key[0]==="d"?` · ${api.niceDate(G.key.slice(1))}`:""}\n${f?`I got ${t} vs your ${totalOf(G.qs,f.g)}!`:`I scored ${t}/${QN*100}. Can you get closer? 🎯`}\n${G.pts.map(emo).join("")}`;
+    const msg=main.querySelector(".cw-prev");
+    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});if(msg)msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
+    api.share(`${text}\n${url}`,btn);if(msg)msg.textContent="Link copied. Paste it to a friend!"}
+  // a friend's link: keep their answers, then compare if this set is already played, or play it with theirs alongside
+  function open(o){const g=(o.g||[]).slice(0,QN).map(Number),name=String(o.n||"A friend").slice(0,24),key=String(o.k);
+    const m=mine(key),own=m&&name===api.nick()&&g.join()===m.g.slice(0,g.length).join();
+    if(!own){const list=st.vs[key]=st.vs[key]||[],j=list.findIndex(x=>x.n===name),x={n:name,g};if(j>=0)list[j]=x;else list.push(x);
+      const ks=Object.keys(st.vs);if(ks.length>40)ks.slice(0,ks.length-40).forEach(k=>delete st.vs[k]);api.save()}
+    const vs=own?null:{n:name,g};play(key,vs);fi=Math.max(0,friends(key).findIndex(x=>x.n===name))}
   const onClick=e=>{const m=e.target.closest("[data-cwm]");if(m){const v=+m.dataset.cwm,on=mul!==v;mul=on?v:1;main.querySelectorAll("[data-cwm]").forEach(b=>b.setAttribute("aria-pressed",String(on&&+b.dataset.cwm===v)));preview();return}
+    const fb=e.target.closest("[data-cwfr]");if(fb){fi=+fb.dataset.cwfr;over();return}
     const b=e.target.closest("[data-cw]");if(!b)return;const k=b.dataset.cw;
-    if(k==="next"){if(G.i<QN)ask();else finish()}else if(k==="new"){if(st.mode!=="daily")fresh()}else if(k==="share")share(b)};
+    if(k==="next"){if(G.i<QN)ask();else finish()}else if(k==="new"){if(st.mode!=="daily"||!G.daily){st.mode="practice";api.bar.querySelector("[data-cwmode]").value="practice";fresh()}}else if(k==="send")send(b)};
   api.on(api.root,"click",onClick);api.on(api.bar,"click",onClick);
   api.on(api.root,"submit",e=>{if(e.target.matches("[data-cwf]")){e.preventDefault();guess()}});
   api.on(api.root,"input",e=>{if(e.target.id==="cwg")preview()});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-cwmode]")){st.mode=e.target.value;api.save();fresh()}});
-  fresh();
+  if(link&&typeof link==="object"&&/^[dp][\w-]{1,20}$/.test(String(link.k))&&Array.isArray(link.g)){api.bar.querySelector('[data-cw="new"]').hidden=true;open(link)}
+  else{if(link)api.toast("That Closest Wins link didn't work. Ask your friend to send it again.");fresh()}
   return {unmount(){}};
 }};
 A95G.closest._t={parse,score,BANK};
