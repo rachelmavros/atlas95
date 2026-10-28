@@ -109,7 +109,7 @@ mount(api){
     api.share(`${text}\n${url}`,btn);res.textContent="Link copied. Paste it to a friend!"}
   // a friend's link: keep their pins, then compare if these cities are already played, or play them with theirs alongside
   function open(o){const p=o.p.slice(0,ROUNDS).map(x=>Array.isArray(x)&&isFinite(x[0])&&isFinite(x[1])?[+x[0],+x[1]]:null),name=String(o.n||"A friend").slice(0,24),key=String(o.k),m=mine(key);
-    const own=m&&name===api.nick()&&m.pins&&JSON.stringify(m.pins.slice(0,p.length))===JSON.stringify(p);
+    const own=!p.some(Boolean)||(m&&name===api.nick()&&m.pins&&JSON.stringify(m.pins.slice(0,p.length))===JSON.stringify(p));
     if(!own){const list=st.vs[key]=st.vs[key]||[],j=list.findIndex(x=>x.n===name),x={n:name,p};if(j>=0)list[j]=x;else list.push(x);
       const ks=Object.keys(st.vs);if(ks.length>40)ks.slice(0,ks.length-40).forEach(k=>delete st.vs[k]);api.save()}
     api.bar.querySelector('[data-pd="new"]').hidden=true;play(key,m||own?null:{n:name,p});const fr=friends(key);fi=Math.max(0,fr.findIndex(x=>x.n===name));if(m)over()}
