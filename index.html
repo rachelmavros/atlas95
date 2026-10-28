@@ -2972,7 +2972,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{if(e.target.id==="gllang"&&GM.lpick){GM.lpick.lang=e.target.value;gmLesSetup(gmLesBox())}});
 
 // ---------- shared leaderboard (db) ----------
-let gmDB=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
+let gmDB=null,gmSbc=null,gmU=null,gmUid=null,gmPlayers=null,gmCanWrite=true,gmLastSync=store.get("gm.sync")||"",gmSyncT=null,gmDbState="connecting";
 function gmPayload(){const st=GM.st,ds=Object.keys(st.dailies).sort(),last=ds[ds.length-1];const L=gmLevel(st.xp);
   return {nick:String(GM.set.nick||"").slice(0,24),xp:st.xp,lvl:L,streak:gmStreak(),streakDay:last||"",bestStreak:st.bestStreak,lstreak:gmLesStreak(),tbest:st.tvBest||0,tdaily:(()=>{const tk=Object.keys(st.trivia||{}).sort().pop();return tk?{d:tk,s:st.trivia[tk].s,m:st.trivia[tk].m}:null})(),lessonDay:Object.keys(st.lessons).sort().pop()||"",answers:st.answers,first:st.first,sections:st.sections,perfects:st.perfects,badges:st.badges.length,games:vBoard(),chal:vChPayload(),tour:GV.tour,tourL:GV.tourL,
     daily:last?{d:last,t:st.dailies[last].t,s:st.dailies[last].s,ms:st.dailies[last].ms,m:st.dailies[last].m}:null}}
@@ -2988,7 +2988,7 @@ async function gmConnectSupabase(){
     const sb=window.supabase.createClient(GM_SB.url,GM_SB.anonKey);
     let {data:{session}}=await sb.auth.getSession();
     if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
-    gmUid=session.user.id;gmDbState="on";gmLastSync="";
+    gmUid=session.user.id;gmSbc=sb;gmDbState="on";gmLastSync="";
     const load=async()=>{const {data,error}=await sb.from("players").select("id,data").order("updated_at",{ascending:false}).limit(500);if(error)return;
       gmPlayers=data.map(r=>Object.assign({},r.data,{id:r.id}));if(gmScoresOpen()&&GM.tab==="lb")gmRenderScores();gmRefreshMini()};
     gmDB={remove:async()=>{const {error}=await sb.from("players").delete().eq("id",gmUid);if(error)throw error;await load()},save:async p=>{const {error}=await sb.from("players").upsert({id:gmUid,data:p,updated_at:new Date().toISOString()});if(error){const e=new Error(error.message);e.code=error.code==="42501"?"invalid_argument":"unavailable";throw e}load()},refresh:load};
@@ -3301,7 +3301,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="20";
+const VG_VER="21";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3446,7 +3446,9 @@ function vApi(g){
     geo:()=>({world:features,us:stateFeatures}),
     // a shareable link that reopens this game with o (see vChBoot); for things a seed can't carry, like a drawing
     // a string goes in the link as-is (base64url); anything else as JSON
-    link:o=>typeof o==="string"?location.href.split("#")[0]+"#"+g.id+"=_"+o:vChLink(o).replace("#ch=","#"+g.id+"="),
+    link:o=>vLongLink(g.id,o),
+    // the same as a short /s/<id> link when the shares table is set up (async: it saves the payload first). name is for the link preview.
+    shareLink:(o,name)=>vShareLink(g.id,o,name),
     nick:v=>{if(v!=null&&!GV.set.nick&&String(v).trim()){GV.set.nick=String(v).trim().slice(0,24);gmSave()}return GV.set.nick||""},
     linkData:()=>GV.mode&&GV.mode.type==="link"&&GV.mode.g===g.id?GV.mode.data:null,
     // seeded runs (challenges, the weekly tournament): call begin(opts) at the start of every game and build the board with the generator it returns
@@ -3573,6 +3575,23 @@ function vChBar(){const el=vEl("vchslot");if(!el)return;const L=GV.last,m=GV.mod
   el.innerHTML=L&&L.g===GV.cur&&L.v!=null&&!(m&&m.type==="tour")?`<button class="btn default" type="button" data-vchal>🏁 ${m?"Send my score":"Challenge a friend"}</button>`:""}
 // ---- links: everything needed to replay the game goes in the address after #ch= ----
 function vChLink(o){const b=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return location.href.split("#")[0]+"#ch="+b}
+// Short share links: the payload is saved in the Supabase "shares" table and the link is /s/<id>. On Vercel, the /s and /g routes
+// (vercel.json, api/share.js) give link previews the game's name, then hand over to the app. Without the table, the payload rides in the link.
+const vBase=()=>location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,"");
+const vPaths=()=>!!window.ATLAS95_SHARE_PATHS;
+function vLongLink(gid,o){const h=typeof o==="string"?"_"+o:vChLink(o).split("#ch=")[1];return (vPaths()?vBase()+"g/"+gid:location.href.split("#")[0])+"#"+gid+"="+h}
+let vShareOK=true;
+async function vShareLink(gid,o,name){
+  if(gmSbc&&vShareOK){try{const id=Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"[b%56]).join("");
+    const {error}=await gmSbc.from("shares").insert({id,game:gid,data:{n:String(name||"").slice(0,24),v:o}});
+    if(!error)return (vPaths()?vBase()+"s/":location.href.split("#")[0]+"#s=")+id;
+    // no table yet (or no permission): stop trying this session
+    if(/PGRST20|42P01|42501|does not exist|schema cache|permission/i.test(`${error.code} ${error.message}`))vShareOK=false}catch(e){}}
+  return vLongLink(gid,o)}
+async function vShareOpen(id){let r=null;
+  try{if(GM_SB&&GM_SB.url){const res=await fetch(`${GM_SB.url}/rest/v1/shares?id=eq.${encodeURIComponent(id)}&select=game,data`,{headers:{apikey:GM_SB.anonKey}});const a=await res.json();r=Array.isArray(a)?a[0]:null}}catch(e){}
+  const g=r&&vGame(r.game);if(!g||!r.data||r.data.v==null){gmToast("That link didn't work. Ask your friend to send it again.");return}vLinkOpen(g,r.data.v)}
+function vLinkOpen(g,o){setTimeout(()=>{GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);showApp("vault");vOpen(g.id,{type:"link",g:g.id,seed:0,opts:{},data:o})},50)}
 function vChParse(s){try{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const o=JSON.parse(decodeURIComponent(escape(atob(s))));
   return o&&vGame(o.g)&&typeof o.s==="number"&&o.t!=null?o:null}catch(e){return null}}
 function vChDialog(){const L=GV.last,g=L&&vGame(L.g);if(!g)return;const m=GV.mode&&GV.mode.type==="challenge"&&GV.mode.g===L.g?GV.mode:null;
@@ -3605,9 +3624,10 @@ function vChOpen(o){const i=`${o.g}:${o.s}`,from=String(o.n||"A friend").slice(0
   showApp("vault");vOpen(o.g,{type:"challenge",g:o.g,seed:o.s,opts:o.o||{},from:got.from,v:got.v,t:got.t,h:got.h})}
 function vChBoot(){const m=/[#&]([a-z0-9]+)=([A-Za-z0-9_-]+)/.exec(location.hash);if(!m)return;try{history.replaceState(null,"",location.href.split("#")[0])}catch(e){}
   // #ch= is a challenge; #<game id>= hands that game whatever it put in the link (api.link)
+  if(m[1]==="s"){vShareOpen(m[2]);return}
   if(m[1]!=="ch"){const g=vGame(m[1]);let o=null;if(m[2][0]==="_")o=m[2].slice(1);else try{let b=m[2].replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";o=JSON.parse(decodeURIComponent(escape(atob(b))))}catch(e){}
     if(!g||!o){gmToast("That link didn't work. Ask your friend to send it again.");return}
-    setTimeout(()=>{GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);showApp("vault");vOpen(g.id,{type:"link",g:g.id,seed:0,opts:{},data:o})},50);return}
+    vLinkOpen(g,o);return}
   const o=vChParse(m[2]);
   if(o)setTimeout(()=>vChOpen(o),50);else gmToast("That challenge link didn't work. Ask your friend to send it again.")}
 addEventListener("hashchange",vChBoot);

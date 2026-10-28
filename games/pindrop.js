@@ -100,11 +100,15 @@ mount(api){
         return `<tr><td>${api.esc(c[0])}</td><td class="${f&&m!=null&&o!=null&&m<o?"win":""}">${m!=null?fmt(m)+" mi":"-"}</td>${f?`<td class="${o!=null&&m!=null&&o<m?"win":""}">${o!=null?fmt(o)+" mi":"-"}</td>`:""}</tr>`}).join("")}</table>`;
     act.innerHTML=`${G.key&&!api.nick()?`<div class="pd-name"><label for="pdnm">Your name:</label><input id="pdnm" maxlength="24" autocomplete="nickname" placeholder="So friends know it's you"></div>`:""}
       ${G.key?`<button class="btn default" type="button" data-pd="send">${f?`Send my pins to ${api.esc(f.n)}...`:"Challenge a friend..."}</button>`:""}${G.key&&G.key[0]==="p"?`<button class="btn" type="button" data-pd="new">New cities</button>`:G.daily?`<span class="note">New cities tomorrow.</span>`:""}`;
-    svg.transition().duration(api.reduced()?0:400).call(zoom.transform,d3.zoomIdentity);drawPins()}
-  async function send(btn){const ni=act.querySelector("#pdnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const name=api.nick()||"A friend",tot=milesOf(G.dists),f=vsNow();
+    svg.transition().duration(api.reduced()?0:400).call(zoom.transform,d3.zoomIdentity);drawPins();if(G.key)pdLink()}
+  // links are made ahead of the tap (saving a short link takes a moment, and phones only allow sharing straight after a tap)
+  let prep=null;
+  function pdLink(){const ni=act.querySelector("#pdnm"),name=(ni&&ni.value.trim())||api.nick()||"A friend",key=`${G.key}|${name}`;
+    if(!prep||prep.key!==key)prep={key,p:api.shareLink({k:G.key,n:name,p:G.pins},name)};return prep.p}
+  async function send(btn){const ni=act.querySelector("#pdnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const tot=milesOf(G.dists),f=vsNow();
     const dot=k=>{const m=mi(k);return m<=100?"🟢":m<=300?"🟡":m<=800?"🟠":"🔴"};
-    const url=api.link({k:G.key,n:name,p:G.pins});
-    const text=`Atlas95 Pin Drop · ${G.key[0]==="d"?api.niceDate(G.key.slice(1)):S().label}\n📍 ${f?`I was ${fmt(tot)} miles off vs your ${fmt(milesOf(fdists(f)))}!`:`${fmt(tot)} miles off. Can you beat me?`}\n${G.dists.map(dot).join("")}`;
+    const url=await pdLink();
+    const text=`📍 Pin Drop on Atlas95 · ${G.key[0]==="d"?api.niceDate(G.key.slice(1)):S().label}\n${f?`I was ${fmt(tot)} miles off vs your ${fmt(milesOf(fdists(f)))}!`:`${fmt(tot)} miles off. Can you beat me?`}\n${G.dists.map(dot).join("")}`;
     if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});res.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
     api.share(`${text}\n${url}`,btn);res.textContent="Link copied. Paste it to a friend!"}
   // a friend's link: keep their pins, then compare if these cities are already played, or play them with theirs alongside
@@ -119,6 +123,7 @@ mount(api){
     if(k==="lock")lock();else if(k==="next"){if(G.i<ROUNDS)aim();else finish()}
     else if(k==="new"){if(st.set==="daily"){st.set=G.cset;api.bar.querySelector("[data-pdset]").value=st.set}fresh()}else if(k==="send")send(b)};
   api.on(api.root,"click",onClick);api.on(api.bar,"click",onClick);
+  api.on(api.root,"change",e=>{if(e.target.id==="pdnm"&&G.key)pdLink()});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-pdset]")){st.set=e.target.value;api.save();fresh()}});
   if(link&&typeof link==="object"&&/^(d\d{4}-\d\d-\d\d|p(caps|big|us)\.[a-z0-9]{1,12})$/.test(String(link.k))&&Array.isArray(link.p))open(link);
   else{if(link)api.toast("That Pin Drop link didn't work. Ask your friend to send it again.");fresh()}

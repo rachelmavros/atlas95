@@ -110,6 +110,10 @@ mount(api){
     if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});if(fb)fb.textContent="Sent!";return true}catch(e){if(e&&e.name==="AbortError")return false}}
     api.share(`${text}\n${url}`,btn);if(fb)fb.textContent="Link copied. Paste it to a friend!";return true}
   function nameField(){return api.nick()?"":`<div class="dr-name"><label for="drnm">Your name:</label><input id="drnm" maxlength="24" autocomplete="nickname" placeholder="So they know it's you"></div>`}
+  // links are made ahead of the tap (saving a short link takes a moment, and phones only allow sharing straight after a tap)
+  let prep=null;const ready=(key,make)=>{if(!prep||prep.key!==key)prep={key,p:make()};return prep.p};
+  function drawLink(){const name=myName(),re=st.re||null;return ready(`d|${sendId}|${name}|${re?re.id:""}`,()=>api.shareLink(pack({id:sendId,word,name:name||"A friend",strokes,re}),name))}
+  function reLink(){const name=myName(),re=st.re;return ready(`r|${re.id}|${name}`,()=>api.shareLink(pack({id:newId(),word:"",name:name||"A friend",strokes:[],re}),name))}
   function myName(){const ni=W.querySelector("#drnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());return (ni&&ni.value.trim())||api.nick()||""}
   // ---- draw for a friend
   function recent(){const rows=st.out.slice(0,5).map(o=>{const r=st.res[o.id]||[];return `<tr><td>${api.esc(o.w)}</td><td>${r.length?r.map(x=>`${api.esc(x.n||"A friend")} ${x.ok?`got it${x.g.length>1?` in ${x.g.length}`:" first try"} ✓`:"gave up"}`).join("<br>"):`<span class="note">Waiting for a guess</span>`}</td></tr>`}).join("");
@@ -119,7 +123,7 @@ mount(api){
       <button class="btn" type="button" data-dr="reroll">Different words</button>
       ${st.re?`<div class="dr-sub">📎 Your guesses on ${who(st.re.to)}'s <b>${api.esc(st.re.word)}</b> go along with this doodle.</div>`:st.sent?"":`<div class="dr-sub">Your friend gets a link, watches your drawing replay, and guesses.</div>`}${recent()}`}
   function canvasUI(msg){W.innerHTML=`<div class="dr-msg">${msg}</div>`;const d=pad();W.appendChild(d);cv=d.querySelector("canvas");fit()}
-  function drawScreen(w){cancelAnim();word=w;phase="draw";strokes=[];undone=null;sendId=null;canvasUI(`Draw: <u>${api.esc(w)}</u>`);drawable();
+  function drawScreen(w){cancelAnim();prep=null;word=w;phase="draw";strokes=[];undone=null;sendId=null;canvasUI(`Draw: <u>${api.esc(w)}</u>`);drawable();
     const t=document.createElement("div");t.className="dr-tools";W.appendChild(t);const a=document.createElement("div");a.className="dr-tools";a.id="dract";W.appendChild(a);tools()}
   function tools(){const t=W.querySelector(".dr-tools");if(!t||phase!=="draw")return;
     t.innerHTML=COLORS.map((c,i)=>`<button class="dr-sw" type="button" data-drc="${i}" style="background:${c}" aria-label="Color ${i+1}" aria-pressed="${i===color}"></button>`).join("")+
@@ -128,10 +132,10 @@ mount(api){
   function sendScreen(){phase="send";cancelAnim();sendId=sendId||newId();
     W.innerHTML=`<div class="dr-msg">Nice! Now send it to a friend.</div><div class="dr-sub">They'll see it drawn line by line and try to guess <b>${api.esc(word)}</b>.${st.re?` Your guesses on ${who(st.re.to)}'s doodle go with it.`:""}</div>`;
     const d=pad();W.appendChild(d);cv=d.querySelector("canvas");fit();redraw();
-    W.insertAdjacentHTML("beforeend",`${nameField()}<div class="dr-tools"><button class="btn default" type="button" data-dr="send">Send...</button><button class="btn" type="button" data-dr="back">Keep drawing</button><button class="btn" type="button" data-dr="pick">Draw another</button></div><div class="dr-fb" aria-live="polite"></div>`)}
-  async function send(btn){const name=myName(),re=st.re||null,data=pack({id:sendId,word,name:name||"A friend",strokes,re});
-    const text=`${name?name+" drew":"I drew"} you something on Atlas95. Can you guess it? 🎨${re?` (Plus how I did on your ${re.word}!)`:""}`;
-    if(!(await shareLink(text,api.link(data),btn)))return;
+    W.insertAdjacentHTML("beforeend",`${nameField()}<div class="dr-tools"><button class="btn default" type="button" data-dr="send">Send...</button><button class="btn" type="button" data-dr="back">Keep drawing</button><button class="btn" type="button" data-dr="pick">Draw another</button></div><div class="dr-fb" aria-live="polite"></div>`);drawLink()}
+  async function send(btn){const name=myName(),re=st.re||null,url=await drawLink();
+    const text=`🎨 Doodle Relay: ${name||"I"} drew you something. Can you guess it?${re?` (Plus how I did on your ${re.word}!)`:""}`;
+    if(!(await shareLink(text,url,btn)))return;
     if(!st.out.some(o=>o.id===sendId)){st.sent=(st.sent||0)+1;st.out.unshift({id:sendId,w:word,d:pack({id:sendId,word,name,strokes})});st.out=st.out.slice(0,10);api.result({xp:5})}
     if(re&&st.re===re)delete st.re;api.save();status()}
   // ---- a friend's guesses on one of my doodles: replay my drawing, then their guesses one by one
@@ -165,9 +169,9 @@ mount(api){
     if(!G.link){W.querySelector("#dract").innerHTML=`<button class="btn default" type="button" data-dr="solo">Next doodle</button><button class="btn" type="button" data-dr="replay">Replay</button>`;return}
     // remember the guesses so they ride along with the next doodle (or go on their own)
     if(G.id){st.re={id:G.id,word:G.word,ok,g:G.guesses.slice(-12),to:G.name};api.save()}
-    W.querySelector("#dract").outerHTML=`${G.id?`<div class="dr-sub">${who(G.name)} will see every guess you made.</div>${nameField()}`:""}<div class="dr-tools" id="dract"><button class="btn default" type="button" data-dr="pick">Draw one back</button>${G.id?`<button class="btn" type="button" data-dr="sendre">Just send my guesses</button>`:""}<button class="btn" type="button" data-dr="replay">Replay</button></div>`}
-  async function sendRe(btn){const re=st.re;if(!re)return;const name=myName(),url=api.link(pack({id:newId(),word:"",name:name||"A friend",strokes:[],re}));
-    if(!(await shareLink(`${name||"I"} guessed your doodle on Atlas95! Watch how it went 🎨`,url,btn)))return;if(st.re===re)delete st.re;api.save()}
+    W.querySelector("#dract").outerHTML=`${G.id?`<div class="dr-sub">${who(G.name)} will see every guess you made.</div>${nameField()}`:""}<div class="dr-tools" id="dract"><button class="btn default" type="button" data-dr="pick">Draw one back</button>${G.id?`<button class="btn" type="button" data-dr="sendre">Just send my guesses</button>`:""}<button class="btn" type="button" data-dr="replay">Replay</button></div>`;if(G.id)reLink()}
+  async function sendRe(btn){const re=st.re;if(!re)return;const name=myName(),url=await reLink();
+    if(!(await shareLink(`🎨 Doodle Relay: ${name||"I"} guessed your doodle. Watch how it went!`,url,btn)))return;if(st.re===re)delete st.re;api.save()}
   let soloQ=[];function solo(){const all=((A95G.draw&&A95G.draw._shapes)||[]).filter(x=>!/ in a /.test(x[0]));if(!all.length){W.innerHTML=`<div class="dr-msg">Couldn't load the computer's doodles.</div>`;return}
     if(!soloQ.length)soloQ=api.shuffle(all,Math.random);const [name,d]=soloQ.pop();guessScreen({word:name.toLowerCase(),strokes:shapeStrokes(d),link:false})}
   function start(){if(st.mode==="solo")solo();else choose()}
@@ -182,6 +186,7 @@ mount(api){
     else if(k==="send")send(b);else if(k==="sendre")sendRe(b);else if(k==="replay")play();else if(k==="giveup")giveUp();else if(k==="solo")solo();
     else if(k==="theirs"&&inbound)theirs(inbound);else if(k==="rewatch"&&inbound)replyScreen(inbound)};
   api.on(api.root,"click",onClick);
+  api.on(api.root,"change",e=>{if(e.target.id!=="drnm")return;if(phase==="send")drawLink();else if(st.re&&G&&G.link)reLink()});
   api.on(api.root,"submit",e=>{if(e.target.matches("[data-drf]")){e.preventDefault();guess()}});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-drmode]")){st.mode=e.target.value;api.save();start()}});
   if(!ro)api.on(window,"resize",()=>{if(!cv||!cv.isConnected)return;fit();repaint()});

@@ -199,10 +199,14 @@ mount(api){
         return `<tr><td>${api.esc(q.q)}<br><span class="note">Answer ${fmt(q.a,q)} ${api.esc(q.u||"")} &middot; you ${G.g[i]!=null?fmt(G.g[i],q):"-"}${f?` &middot; ${api.esc(f.n)} ${f.g[i]!=null?fmt(f.g[i],q):"-"}`:""}</span></td><td class="cw-p${f&&mp>fp?" win":""}">${mp!=null?mp:"-"}</td>${f?`<td class="cw-p${fp>mp?" win":""}">${fp!=null?fp:"-"}</td>`:""}</tr>`}).join("")}</table>
       ${G.key&&!api.nick()?`<div class="cw-name"><label for="cwnm">Your name:</label><input id="cwnm" maxlength="24" autocomplete="nickname" placeholder="So friends know it's you"></div>`:""}
       <div class="cw-in">${G.key?`<button class="btn default" type="button" data-cw="send">${f?`Send my answers to ${api.esc(f.n)}...`:"Challenge a friend..."}</button>`:""}${!G.daily&&!G.vault?`<button class="btn" type="button" data-cw="new">New questions</button>`:""}</div>
-      <div class="cw-prev" aria-live="polite">${G.daily?"New questions tomorrow.":""}</div>`}
-  async function send(btn){const ni=main.querySelector("#cwnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const name=api.nick()||"A friend",t=tot(),fr=friends(G.key),f=fr[Math.min(fi,fr.length-1)];
-    const url=api.link({k:G.key,n:name,g:G.g.map(v=>+(+v).toPrecision(6))});
-    const text=`Atlas95 Closest Wins${G.key[0]==="d"?` · ${api.niceDate(G.key.slice(1))}`:""}\n${f?`I got ${t} vs your ${totalOf(G.qs,f.g)}!`:`I scored ${t}/${QN*100}. Can you get closer? 🎯`}\n${G.pts.map(emo).join("")}`;
+      <div class="cw-prev" aria-live="polite">${G.daily?"New questions tomorrow.":""}</div>`;if(G.key)cwLink()}
+  // links are made ahead of the tap (saving a short link takes a moment, and phones only allow sharing straight after a tap)
+  let prep=null;
+  function cwLink(){const ni=main.querySelector("#cwnm"),name=(ni&&ni.value.trim())||api.nick()||"A friend",key=`${G.key}|${name}`;
+    if(!prep||prep.key!==key)prep={key,p:api.shareLink({k:G.key,n:name,g:G.g.map(v=>+(+v).toPrecision(6))},name)};return prep.p}
+  async function send(btn){const ni=main.querySelector("#cwnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const t=tot(),fr=friends(G.key),f=fr[Math.min(fi,fr.length-1)];
+    const url=await cwLink();
+    const text=`🎯 Closest Wins on Atlas95${G.key[0]==="d"?` · ${api.niceDate(G.key.slice(1))}`:""}\n${f?`I got ${t} vs your ${totalOf(G.qs,f.g)}!`:`I scored ${t}/${QN*100}. Can you get closer? 🎯`}\n${G.pts.map(emo).join("")}`;
     const msg=main.querySelector(".cw-prev");
     if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});if(msg)msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
     api.share(`${text}\n${url}`,btn);if(msg)msg.textContent="Link copied. Paste it to a friend!"}
@@ -219,6 +223,7 @@ mount(api){
   api.on(api.root,"click",onClick);api.on(api.bar,"click",onClick);
   api.on(api.root,"submit",e=>{if(e.target.matches("[data-cwf]")){e.preventDefault();guess()}});
   api.on(api.root,"input",e=>{if(e.target.id==="cwg")preview()});
+  api.on(api.root,"change",e=>{if(e.target.id==="cwnm"&&G.key)cwLink()});
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-cwmode]")){st.mode=e.target.value;api.save();fresh()}});
   if(link&&typeof link==="object"&&/^[dp][\w-]{1,20}$/.test(String(link.k))&&Array.isArray(link.g)){api.bar.querySelector('[data-cw="new"]').hidden=true;open(link)}
   else{if(link)api.toast("That Closest Wins link didn't work. Ask your friend to send it again.");fresh()}
