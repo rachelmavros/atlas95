@@ -2576,7 +2576,7 @@ const GM_BADGES=[
   {k:"rival",emo:"⚔️",n:"Rival",d:"Beat a friend's challenge",t:()=>!!(GV&&GV.ch)&&GV.ch.got.some(x=>vBetter(x.my,x.v,x.h))},
   {k:"podium",emo:"🥉",n:"On the podium",d:"Finish top 3 in a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.length>=1},
   {k:"champ",emo:"🥇",n:"Champion",d:"Win a weekly tournament",t:()=>!!(GV&&GV.troph)&&GV.troph.some(x=>x.place===1)},
-  {k:"pin20k",emo:"📍",n:"Pinpoint",d:"Score 20,000 points in a game of Pin Drop",t:()=>!!GV&&Object.values(vSt("pindrop").bests||{}).some(v=>v>=20000)},
+  {k:"pin20k",emo:"📍",n:"Pinpoint",d:"Finish a game of Pin Drop less than 500 miles off in total",t:()=>!!GV&&(Object.values(vSt("pindrop").bestMi||{}).some(v=>v<500)||Object.values(vSt("pindrop").bests||{}).some(v=>v>=20000))},
   {k:"bullseye",emo:"🎯",n:"Bullseye",d:"Guess a Closest Wins answer exactly right",t:()=>!!GV&&(vSt("closest").bulls||0)>=1},
   {k:"doodle1",emo:"🎨",n:"Doodle pal",d:"Send a friend a Doodle Relay drawing",t:()=>!!GV&&(vSt("doodle").sent||0)>=1},
   {k:"sudoku1",emo:"🔢",n:"Number cruncher",d:"Solve a Sudoku",t:()=>!!GV&&(vSt("sudoku").wins||0)>=1},
@@ -3301,13 +3301,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="18";
+const VG_VER="19";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
 // Each game: icon, blurb, line (tile text, optional) and lb (leaderboard, optional):
 //   lb.board(stats) -> what goes in the shared player entry under games[lb.key||id] (null to leave it out)
 //   lb.row(value,variant,{t,y}) -> {k:[sort keys, smallest first], show:html} or null; lb.vars are [key,label] tabs, the first is the default
+const vPinMi=d=>d.mi!=null?d.mi:(d.dists||[]).reduce((a,k)=>a+Math.round(k*.621371),0);
 const VG_RANK=(a,b)=>{for(let i=0;i<a.k.length;i++)if(a.k[i]!==b.k[i])return a.k[i]-b.k[i];return 0};
 const vWins=(r,lv)=>(r&&r[lv]&&r[lv].w)||0;
 const VG_LEVELS3=s=>{const r=s.rec;if(!r)return null;const o={h:vWins(r,"hard"),m:vWins(r,"medium"),e:vWins(r,"easy")};return o.h||o.m||o.e?o:null};
@@ -3327,12 +3328,13 @@ const VGAMES=[
       board:s=>{const last=Object.keys(s.days||{}).sort().pop();if(!last)return null;const d=s.days[last];return {d:last,n:d.n,g:d.rows.reduce((a,r)=>a+(r==null?10:r+1),0),st:s.streak||0,mx:s.maxStreak||0}},
       row:(x,v,{t,y})=>{if(v==="streak"){const n=x.d&&y-gmDayNum(x.d)<=1?x.st||0:0;return n?{k:[-n,-(x.mx||0)],show:`${GM_FIRE} ${n} <span class="sub">(best ${x.mx||0})</span>`}:null}
         return x.d===t?{k:[-x.n,x.g],show:`${x.n}/4 solved${x.n===4?` <span class="sub">(${x.g} total rows)</span>`:""}`}:null}}},
-  {id:"pindrop",name:"Pin Drop",blurb:"Drop a pin where the city is on a blank map. The closer you land, the more points.",
+  {id:"pindrop",name:"Pin Drop",blurb:"Drop a pin where the city is on a blank map. Your score is the miles you were off, so lower is better.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#5cc8ff" stroke="#000"/><path d="M1 6c2-2 4-1 5 0s1 3 3 3 3-2 5-1v7H1z" fill="#7fd67f" stroke="#000" stroke-width=".6"/><path d="M8 13.5L5.4 8.6a3 3 0 1 1 5.2 0z" fill="#e00000" stroke="#000" stroke-width=".8"/><circle cx="8" cy="6.9" r="1" fill="#fff"/></svg>',
-    line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: ${d.s.toLocaleString("en-US")} / 25,000`:"Today's five cities are waiting"},
-    lb:{vars:[["daily","Today"],["caps","Capitals"],["big","Big cities"],["us","US capitals"]],head:"Points",empty:{daily:"Nobody has dropped today's pins yet. Be the first!",caps:"No scores yet.",big:"No scores yet.",us:"No scores yet."},
-      board:s=>{const o={};["caps","big","us"].forEach(k=>{if(s.bests&&s.bests[k]!=null)o[k]=s.bests[k]});const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,s:d.s};return Object.keys(o).length?o:null},
-      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[-x.d.s],show:x.d.s.toLocaleString("en-US")}:null):x[v]!=null?{k:[-x[v]],show:x[v].toLocaleString("en-US")}:null}},
+    line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: ${vPinMi(d).toLocaleString("en-US")} miles off`:"Today's five cities are waiting"},
+    // miles off, lowest first (entries from the old points version have no mi and are left out)
+    lb:{vars:[["daily","Today"],["caps","Capitals"],["big","Big cities"],["us","US capitals"]],head:"Miles off",empty:{daily:"Nobody has dropped today's pins yet. Be the first!",caps:"No scores yet.",big:"No scores yet.",us:"No scores yet."},
+      board:s=>{const o={},b=s.bestMi||{},m={};["caps","big","us"].forEach(k=>{if(b[k]!=null)m[k]=b[k]});if(Object.keys(m).length)o.mi=m;const t=gmToday(),d=(s.days||{})[t];if(d)o.dm={d:t,m:vPinMi(d)};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>{if(v==="daily")return x.dm&&x.dm.d===t?{k:[x.dm.m],show:`${x.dm.m.toLocaleString("en-US")} mi`}:null;const m=x.mi&&x.mi[v];return m!=null?{k:[m],show:`${m.toLocaleString("en-US")} mi`}:null}}},
   {id:"closest",name:"Closest Wins",blurb:"How tall is Everest? When did Pompeii fall? Guess the number. The closer you get, the more points.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.3" fill="#fff" stroke="#000"/><circle cx="8" cy="8" r="5" fill="#e00000" stroke="#000" stroke-width=".6"/><circle cx="8" cy="8" r="2.8" fill="#fff" stroke="#000" stroke-width=".6"/><circle cx="8" cy="8" r="1.1" fill="#e00000"/><path d="M15.5 1.5L8.6 7.4" stroke="#000" stroke-width="1.2"/><path d="M15.6 .6l-.2 2.5-2.4.2" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg>',
     line:s=>{const d=(s.days||{})[gmToday()];return d?`Today: ${d.s} / 700`:"Today's seven questions are waiting"},
