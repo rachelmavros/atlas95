@@ -325,7 +325,10 @@ a.link:visited{color:#551a8b}
 .vmode>span:nth-child(2){flex:1 1 220px;min-width:0}
 .vtour{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--tip);border:1px solid var(--ink);padding:8px 10px;margin-bottom:8px}
 .vtico{font-size:28px}.vtmid{flex:1;min-width:180px}
-.vchl{margin-bottom:8px}.vchrow{display:flex;gap:8px;align-items:center;font-size:12.5px}.vchmid{flex:1;min-width:0}
+.vchl{margin-bottom:8px}.vlfr{display:flex;flex-direction:column;gap:4px;margin-top:6px}.vlrow{display:flex;justify-content:space-between;gap:8px;text-align:left;flex-wrap:wrap;min-height:40px}
+.vltab{width:100%;table-layout:fixed}.vltab td{vertical-align:top;overflow-wrap:anywhere}.vltab td:first-child{width:44%}.vltab td:nth-child(2){width:36%}.vltab td:last-child{text-align:right}.vltab td:last-child .btn{min-width:0;padding:2px 8px}.vltab svg{vertical-align:-3px}
+.vlres{display:inline-block;padding:1px 6px;font-weight:700;font-size:12px;border:1px solid #000}.vlres.w{background:#c8f0c8}.vlres.l{background:#ffd0d0}.vlres.t{background:#e8e8e8}
+.vchrow{display:flex;gap:8px;align-items:center;font-size:12.5px}.vchmid{flex:1;min-width:0}
 /* daily lesson list */
 .gmlist{display:flex;flex-direction:column;gap:6px}
 .gmlrow{display:flex;align-items:center;gap:8px;background:var(--hi);box-shadow:var(--sunken);padding:6px 8px}
@@ -3553,7 +3556,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="23";
+const VG_VER="24";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3698,6 +3701,8 @@ function vApi(g){
     css(text){const id="vgcss-"+g.id;if(!vEl(id)){const s=document.createElement("style");s.id=id;s.textContent=text;document.head.appendChild(s)}},
     status(a,b){vEl("vst1").textContent=a||"";vEl("vst2").textContent=b||"";vStatusXP()},
     sound(k){if(!GV.set.mute)vBeep(k)},muted:()=>!!GV.set.mute,
+    // record a settled result against a friend for the Friend log: {k (unique), n (friend), me, them, res "w"/"l"/"t"/null, what, d, view:{data} to reopen it, keep}
+    log:e=>vLog(Object.assign({g:g.id},e)),
     toast:gmToast,
     share(text,btn){GM.share.vg=text;gmShare("vg",btn)},
     flagImg,countries:()=>COUNTRIES,elements:()=>ELEMENTS,presidents:()=>PRES,
@@ -3734,7 +3739,7 @@ function vRender(){if(GV.cur)return;vHome()}
 function vLine(g){const s=GV.st[g.id]||{};return g.line?g.line(s):s.bestText?`Best: ${s.bestText}`:"Not played yet"}
 function vHome(){vUnmount();
   vEl("vtitle").textContent="Game Vault";
-  vEl("vbar").innerHTML=`<span class="note">Pick a game. Playing earns XP, up to ${VG_XPCAP} a day.</span><span class="spacer"></span>${vMuteBtn()}`;
+  vEl("vbar").innerHTML=`<span class="note">Pick a game. Playing earns XP, up to ${VG_XPCAP} a day.</span><span class="spacer"></span><button class="btn" type="button" data-vlog>📒 Friend log</button>${vMuteBtn()}`;
   vTourRoll();vEl("vstage").innerHTML=`${vHomeExtras()}<div class="vgrid">${VGAMES.map(g=>`<button class="vtile" type="button" data-vg="${g.id}">${g.icon.replace(/width="16" height="16"/,'width="40" height="40"')}<b>${esc(g.name)}</b><span class="vblurb">${esc(g.blurb)}</span><span class="vbest">${esc(vLine(g))}</span></button>`).join("")}</div>`;
   vEl("vst1").textContent=`${VGAMES.length} games · build ${VG_VER}`;vEl("vst2").textContent=`Played: ${vPlays()}`;vStatusXP();gmResolveNames(vEl("vstage"));
 }
@@ -3758,7 +3763,9 @@ function vHelp(){const I=GV.inst;if(!I)return;const help=A95G[I.g.id].help||"";
 // pause a running game when its window is hidden or the tab goes to the background
 function vOnVis(){const I=GV.inst;if(I&&I.h.pause&&(APPS.vault.win.hidden||document.visibilityState==="hidden"))try{I.h.pause()}catch(e){}}
 document.addEventListener("visibilitychange",vOnVis);
-document.getElementById("vwin").addEventListener("click",e=>{const b=e.target.closest("[data-vg],[data-vhome],[data-vhelp],[data-vmute],[data-vclose]");if(!b)return;
+document.getElementById("vwin").addEventListener("click",e=>{const lb=e.target.closest("[data-vlog],[data-vlogf],[data-vlogv]");
+  if(lb){if(lb.hasAttribute("data-vlogv"))vLogView(+lb.dataset.vlogv);else vLogShow(lb.hasAttribute("data-vlogf")?lb.dataset.vlogf:null);return}
+  const b=e.target.closest("[data-vg],[data-vhome],[data-vhelp],[data-vmute],[data-vclose]");if(!b)return;
   if(b.dataset.vg){vOpen(b.dataset.vg);return}
   if(b.hasAttribute("data-vhome")){vHome();return}
   if(b.hasAttribute("data-vhelp")){vHelp();return}
@@ -3856,6 +3863,27 @@ function vLinkOpen(g,o){setTimeout(()=>{GM.popq=[];if(gmDailyOpen())gmCloseDaily
 function vChParse(s){try{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const o=JSON.parse(decodeURIComponent(escape(atob(s))));
   return vChOk(o)}catch(e){return null}}
 function vChOk(o){return o&&vGame(o.g)&&typeof o.s==="number"&&o.t!=null?o:null}
+// ---- Friend log: settled results between you and each friend (challenge links and the head-to-head games), newest first
+GV.log=store.get("gv.log")||[];
+function vLog(e){if(!e||!e.n||!vGame(e.g))return;const i=GV.log.findIndex(x=>x.k===e.k);if(i>=0&&e.keep)return;
+  const o=Object.assign({d:gmToday()},i>=0?GV.log[i]:{},e,{n:String(e.n).slice(0,24),at:Date.now()});delete o.keep;if(i>=0)GV.log.splice(i,1);
+  GV.log.unshift(o);GV.log=GV.log.slice(0,150);store.set("gv.log",GV.log)}
+const vLogKey=n=>String(n||"").trim().toLowerCase();
+function vLogFriends(){const m=new Map();GV.log.forEach(e=>{const k=vLogKey(e.n);let f=m.get(k);if(!f){f={k,n:e.n,w:0,l:0,t:0,all:[]};m.set(k,f)}f.all.push(e);if(e.res==="w")f.w++;else if(e.res==="l")f.l++;else if(e.res==="t")f.t++});return [...m.values()]}
+function vLogShow(who){const fr=vLogFriends(),f=who!=null?fr.find(x=>x.k===who):null;
+  const tally=x=>`You ${x.w} &middot; ${esc(x.n)} ${x.l}${x.t?` &middot; ${x.t} tie${x.t===1?"":"s"}`:""}`;
+  const chip=r=>r==="w"?'<span class="vlres w">Won</span>':r==="l"?'<span class="vlres l">Lost</span>':r==="t"?'<span class="vlres t">Tie</span>':"";
+  let body;
+  if(!fr.length)body=`<div>No results yet. Challenge a friend from any game. Once you've both played, your results show up here.</div>`;
+  else if(!f)body=`<div class="note">Tap a friend to see every game you've played against each other.</div><div class="vlfr">${fr.map(x=>`<button class="btn vlrow" type="button" data-vlogf="${esc(x.k)}"><b>${esc(x.n)}</b><span>${x.all.length} game${x.all.length===1?"":"s"} &middot; ${tally(x)}</span></button>`).join("")}</div>`;
+  else body=`<div><b>${esc(f.n)}</b>: ${tally(f)}</div><table class="gmtable vltab"><tbody>${f.all.map(e=>{const g=vGame(e.g),i=GV.log.indexOf(e);
+      return `<tr><td>${g.icon} <b>${esc(g.name)}</b><br><span class="note">${esc(gmNiceDate(e.d))}${e.what?` &middot; ${esc(e.what)}`:""}</span></td><td>${e.me!=null&&e.me!==""?`You: <b>${esc(e.me)}</b><br>`:""}${e.them!=null&&e.them!==""?`${esc(f.n)}: <b>${esc(e.them)}</b>`:""}</td><td>${chip(e.res)}${e.view?`<br><button class="btn" type="button" data-vlogv="${i}">View</button>`:""}</td></tr>`}).join("")}</tbody></table>`;
+  VDLG.innerHTML=`<div class="scrim"><div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="vlogt"><div class="titlebar"><span class="t" id="vlogt">📒 Friend log${f?` - ${esc(f.n)}`:""}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">${body}
+    <div class="actions">${f?`<button class="btn" type="button" data-vlog>&lt; All friends</button>`:""}<span class="spacer"></span><button class="btn default" type="button" data-vclose>Close</button></div></div></div></div>`;
+  const b=VDLG.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
+function vLogView(i){const e=GV.log[i];if(!e||!e.view)return;VDLG.innerHTML="";
+  if(e.view.ch){const o=vChOk(e.view.ch);if(o)vChOpen(o);return}
+  showApp("vault");vOpen(e.g,{type:"link",g:e.g,seed:0,opts:{},data:e.view.data})}
 function vChDialog(){const L=GV.last,g=L&&vGame(L.g);if(!g)return;const m=GV.mode&&GV.mode.type==="challenge"&&GV.mode.g===L.g?GV.mode:null;
   // in a challenge, send your best try on that game, not just the last one
   const got=m?GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`):null,v=got&&got.my!=null?got.my:L.v,t=got&&got.my!=null?got.myt:L.t;
@@ -3878,6 +3906,7 @@ async function vChSend(share){const o=vChFill(),url=await GV.chPrep.p,g=vGame(o.
   try{await navigator.clipboard.writeText(`${text} ${url}`);msg.textContent="Copied! Paste it to a friend."}catch(e){const u=vEl("vchurl");u.focus();u.select();try{document.execCommand("copy");msg.textContent="Copied!"}catch(_){msg.textContent="Select the link above and copy it."}}vChSent(o)}
 function vChResult(g,ch){const m=GV.mode;if(!m||m.type!=="challenge"||m.g!==g.id||VDLG.innerHTML)return;const got=GV.ch.got.find(x=>x.i===`${m.g}:${m.seed}`)||{};
   const mine=got.my!=null?got.my:ch.v,mt=got.my!=null?got.myt:ch.text,won=vBetter(mine,m.v,m.h),tie=mine!=null&&mine===m.v;
+  vLog({k:`ch|${m.g}:${m.seed}|${vLogKey(m.from)}`,g:g.id,n:m.from,me:mt||"Didn't finish",them:m.t,res:won?"w":tie?"t":"l",what:"Challenge",view:{ch:{g:m.g,s:m.seed,o:m.opts||{},n:m.from,v:m.v,t:m.t,h:m.h?1:0}}});
   VDLG.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="vcrt"><div class="titlebar">${g.icon}<span class="t" id="vcrt">Challenge from ${esc(m.from)}</span><div class="tbtns"><button class="tbtn" type="button" data-vclose aria-label="Close">✕</button></div></div><div class="dlg-body">
     <div class="score"><span class="gmbigemo" aria-hidden="true">${won?"🏆":tie?"🤝":"💪"}</span><div><span class="answer">${won?`You beat ${esc(m.from)}!`:tie?"It's a tie!":`${esc(m.from)} is still ahead`}</div>${won||tie?"Send your score back so they know.":"Same game every time, so keep trying!"}</div></div>
     <table class="gmtable"><tbody><tr class="${won?"me":""}"><td>You${got.my!=null&&ch.v!==got.my?" (best try)":""}</td><td><b>${esc(mt||"Didn't finish")}</b></td></tr><tr class="${!won&&!tie?"me":""}"><td>${esc(m.from)}</td><td><b>${esc(m.t)}</b></td></tr></tbody></table>
@@ -3885,6 +3914,8 @@ function vChResult(g,ch){const m=GV.mode;if(!m||m.type!=="challenge"||m.g!==g.id
   const b=VDLG.querySelector(".btn.default");if(b)b.focus({preventScroll:true})}
 // opening a challenge link: remember it and jump straight into that game
 function vChOpen(o){const i=`${o.g}:${o.s}`,from=String(o.n||"A friend").slice(0,24);let got=GV.ch.got.find(x=>x.i===i);
+  // their score on a game you sent them settles that challenge
+  const sent=GV.ch.sent.find(x=>x.i===i);if(sent&&o.v!=null&&from!==GV.set.nick){const h=o.h!=null?!!o.h:true;vLog({k:`ch|${i}|${vLogKey(from)}`,g:o.g,n:from,me:sent.t,them:String(o.t).slice(0,40),res:vBetter(sent.v,o.v,h)?"w":sent.v===o.v?"t":"l",what:"Challenge",view:{ch:o}})}
   if(!got){got={i,g:o.g,s:o.s,o:o.o||{},from,v:o.v,t:String(o.t).slice(0,40),h:!!o.h,d:gmToday()};GV.ch.got=[got,...GV.ch.got].slice(0,10)}else Object.assign(got,{from,v:o.v,t:String(o.t).slice(0,40)});vChSave();
   GM.popq=[];if(gmDailyOpen())gmCloseDaily(true);if(gmLesOpen())gmCloseLesson(true);if(gmTrivOpen())gmCloseTrivia(true);setMenu(false);
   showApp("vault");vOpen(o.g,{type:"challenge",g:o.g,seed:o.s,opts:o.o||{},from:got.from,v:got.v,t:got.t,h:got.h})}

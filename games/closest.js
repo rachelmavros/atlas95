@@ -192,6 +192,7 @@ mount(api){
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Closest Wins!</b><br>${t} / ${QN*100} points</span>`);api.sound("win");over(r)}
   // the results table; with friends on the same set, their answers sit next to yours
   function over(r){head();const t=tot(),fr=G.key?friends(G.key):[],f=fr[Math.min(fi,fr.length-1)]||null,ft=f?totalOf(G.qs,f.g):0;
+    fr.forEach(x=>{const xt=totalOf(G.qs,x.g),daily=G.key[0]==="d";api.log(Object.assign({k:`closest|${G.key}|${x.n.toLowerCase()}`,n:x.n,what:daily?"Daily":"Practice",me:`${t}/${QN*100}`,them:`${xt}/${QN*100}`,res:t>xt?"w":t<xt?"l":"t",view:{data:{k:G.key,n:x.n,g:x.g}}},daily?{d:G.key.slice(1)}:{}))});
     const verdict=f?(t>ft?`You beat ${api.esc(f.n)}! 🏆`:t<ft?`${api.esc(f.n)} wins this one.`:`It's a tie with ${api.esc(f.n)}!`):"";
     main.innerHTML=`<div class="cw-res"><div class="cw-big">${t}${f?` <span style="font-size:20px">vs</span> ${ft}`:""} <span style="font-size:16px">/ ${QN*100}</span></div>${verdict?`<b>${verdict}</b><br>`:""}${r&&r.xp?`+${r.xp} XP`:""}</div>
       ${fr.length>1?`<div class="cw-fr" role="group" aria-label="Compare with">${fr.map((x,i)=>`<button class="btn" type="button" data-cwfr="${i}" aria-pressed="${x===f}">${api.esc(x.n)} ${totalOf(G.qs,x.g)}</button>`).join("")}</div>`:""}

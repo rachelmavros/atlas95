@@ -93,6 +93,7 @@ mount(api){
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Pin Drop!</b><br>${fmt(tot)} miles off</span>`);api.sound("win");over(r)}
   // the results; with friends on the same cities, their miles sit next to yours
   function over(r){head();const tot=milesOf(G.dists),fr=friends(G.key),f=vsNow(),fd=f?fdists(f):null,ft=fd?milesOf(fd):0;fi=f?Math.max(0,fr.indexOf(f)):0;
+    fr.forEach(x=>{const xt=milesOf(fdists(x)),daily=G.key[0]==="d";api.log(Object.assign({k:`pindrop|${G.key}|${x.n.toLowerCase()}`,n:x.n,what:daily?"Daily":S().label,me:`${fmt(tot)} mi`,them:`${fmt(xt)} mi`,res:tot<xt?"w":tot>xt?"l":"t",view:{data:{k:G.key,n:x.n,p:x.p}}},daily?{d:G.key.slice(1)}:{}))});
     qEl.innerHTML=`${fmt(tot)} miles off${f?` vs ${api.esc(f.n)}'s ${fmt(ft)}`:" in total"}`;
     res.innerHTML=`${f?(tot<ft?`You beat ${api.esc(f.n)}! 🏆`:tot>ft?`${api.esc(f.n)} wins this one.`:`It's a tie with ${api.esc(f.n)}!`):""}${r&&r.xp?` +${r.xp} XP`:""}`;
     more.innerHTML=`${fr.length>1?`<div class="pd-fr" role="group" aria-label="Compare with">${fr.map((x,i)=>`<button class="btn" type="button" data-pdfr="${i}" aria-pressed="${x===f}">${api.esc(x.n)} ${fmt(milesOf(fdists(x)))} mi</button>`).join("")}</div>`:""}

@@ -148,7 +148,8 @@ mount(api){
       timers.push(setTimeout(()=>{fb.innerHTML=re.ok?`🎉 ${who(o.name)} got it${re.g.length>1?` in ${re.g.length} guesses`:" on the first try"}!`:`${who(o.name)} gave up${re.g.length?` after ${re.g.length} guess${re.g.length===1?"":"es"}`:""}.`;
         W.querySelector("#dract").innerHTML=(o.strokes.length?`<button class="btn default" type="button" data-dr="theirs">Now guess ${who(o.name)}'s doodle &gt;</button>`:`<button class="btn default" type="button" data-dr="pick">Draw another for ${who(o.name)}</button>`)+`<button class="btn" type="button" data-dr="rewatch">Watch again</button>`},500+re.g.length*700))};
     if(showS)play(after);else after()}
-  function noteReply(o){if(!o.re)return;const list=st.res[o.re.id]=st.res[o.re.id]||[],r={n:o.name,ok:o.re.ok,g:o.re.g};if(!list.some(x=>x.n===r.n&&x.g.join("|")===r.g.join("|")))list.push(r);
+  function noteReply(o){if(!o.re)return;
+    api.log({k:`doodle|out|${o.re.id}|${String(o.name).toLowerCase()}`,n:o.name||"A friend",what:`Your doodle: ${o.re.word}`,them:o.re.ok?`Got it in ${o.re.g.length}`:"Gave up",res:null,view:typeof link==="string"?{data:link}:null});const list=st.res[o.re.id]=st.res[o.re.id]||[],r={n:o.name,ok:o.re.ok,g:o.re.g};if(!list.some(x=>x.n===r.n&&x.g.join("|")===r.g.join("|")))list.push(r);
     const ks=Object.keys(st.res);if(ks.length>30)ks.slice(0,ks.length-30).forEach(k=>delete st.res[k]);api.save()}
   // ---- guessing (a friend's link or the computer)
   function guessScreen(g){cancelAnim();G=g;G.tries=0;G.guesses=[];G.shown=new Set();G.done=false;phase="watch";showS=g.strokes;status();
@@ -166,6 +167,8 @@ mount(api){
     const r=api.result({xp:n===1?8:5});api.sound("win");status();end(true,`🎉 Got it${n===1?" on the first try":` in ${n} guesses`}! It's <b>${api.esc(G.word)}</b>.${r.xp?` +${r.xp} XP`:""}`)}
   function giveUp(){if(!G||G.done)return;G.done=true;cancelAnim();redraw(G.strokes);blanks();api.sound("lose");end(false,`It was <b>${api.esc(G.word)}</b>.`)}
   function end(ok,msg){W.querySelector(".dr-guess")?.remove();W.querySelector(".dr-fb").innerHTML=msg;
+    // your first try is the one that counts in the log
+    if(G.link)api.log({k:`doodle|in|${G.id||G.word}|${String(G.name).toLowerCase()}`,n:G.name||"A friend",what:`Their doodle: ${G.word}`,me:ok?`Got it in ${G.guesses.length}`:"Gave up",res:null,keep:true,view:typeof link==="string"?{data:link}:null});
     if(!G.link){W.querySelector("#dract").innerHTML=`<button class="btn default" type="button" data-dr="solo">Next doodle</button><button class="btn" type="button" data-dr="replay">Replay</button>`;return}
     // remember the guesses so they ride along with the next doodle (or go on their own)
     if(G.id){st.re={id:G.id,word:G.word,ok,g:G.guesses.slice(-12),to:G.name};api.save()}
