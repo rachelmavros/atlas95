@@ -23,14 +23,29 @@ const CSS=`
 function km(a,b){const r=Math.PI/180,dla=(b[1]-a[1])*r,dlo=(b[0]-a[0])*r,h=Math.sin(dla/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dlo/2)**2;return 12742*Math.asin(Math.min(1,Math.sqrt(h)))}
 A95G.pindrop={
 help:`<div>A city name pops up. Tap where you think it is on the map, then press <b>Lock it in</b>. Your score is how many miles off you were, added up over five cities. <b>Lower is better</b>: a perfect game is 0.</div>
-<ul class="factlist"><li><b>Zoom:</b> pinch or scroll, or use the + and − buttons. Drag to move around the map.</li><li>You can move your pin before locking it in.</li><li>Five cities a game. The <b>Daily</b> game is the same for everyone today. In <b>Practice</b> pick world capitals, big cities or US state capitals.</li></ul>`,
+<ul class="factlist"><li><b>Zoom:</b> pinch or scroll, or use the + and − buttons. Drag to move around the map.</li><li>You can move your pin before locking it in.</li><li>Five cities a game. The <b>Daily</b> game is the same for everyone today. In <b>Practice</b> pick world capitals, big cities or US state capitals.</li><li><b>Challenge a friend:</b> after a game, send the link. Your friend gets the same five cities, sees your pin (blue) after each one, and can send theirs back.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;st.days=st.days||{};st.bestMi=st.bestMi||{};const mo=api.modeOpts();if(mo&&mo.set)st.set=mo.set;st.set=SETS[st.set]?st.set:"daily";
-  const d3=window.d3,geo=api.geo(),today=api.today();let G,proj,path,svg,gMap,gPins,zoom,guess=null,phase="ready";
+  api.css(CSS+`
+.pd-vs{font-size:13px;color:#000080;font-weight:700;text-align:center}
+.pd-sum{width:min(100%,480px);border-collapse:collapse;font-size:13px}
+.pd-sum th{font-size:11px;text-align:right;padding:2px 4px;border-bottom:2px solid #000}.pd-sum th:first-child{text-align:left}
+.pd-sum td{padding:3px 4px;border-bottom:1px solid #a0a0a0}.pd-sum td+td{text-align:right;font-weight:700;white-space:nowrap}.pd-sum td.win{background:#c8f0c8}
+.pd-fr{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}.pd-fr .btn[aria-pressed="true"]{box-shadow:var(--sunken);background:var(--hi);font-weight:700}
+.pd-name{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+.pd-name input{font:inherit;padding:3px 6px;box-shadow:var(--sunken);border:0;background:#fff;width:11em}`);
+  const st=api.stats;st.days=st.days||{};st.bestMi=st.bestMi||{};st.sets=st.sets||{};st.vs=st.vs||{};const link=api.linkData(),mo=link?null:api.modeOpts();if(mo&&mo.set)st.set=mo.set;st.set=SETS[st.set]?st.set:"daily";
+  const d3=window.d3,geo=api.geo(),today=api.today();let G,proj,path,svg,gMap,gPins,zoom,guess=null,phase="ready",fi=0;
   api.bar.innerHTML=`<select class="sel95" data-pdset aria-label="Cities"><option value="daily"${st.set==="daily"?" selected":""}>Daily (world)</option>${Object.entries(SETS).map(([k,v])=>`<option value="${k}"${st.set===k?" selected":""}>${v.label}</option>`).join("")}</select><button class="btn" type="button" data-pd="new">New game</button>`;
-  api.root.innerHTML=`<div class="pd-wrap"><div class="pd-head"></div><div class="pd-q" aria-live="polite"></div><div class="pd-mapbox"><svg role="img" aria-label="Map: tap to drop your pin"></svg><div class="pd-zoom"><button class="btn" type="button" data-pdz="1.6" aria-label="Zoom in">+</button><button class="btn" type="button" data-pdz="0.625" aria-label="Zoom out">−</button></div></div><div class="pd-res" aria-live="polite"></div><div class="actions" id="pdact" style="justify-content:center"></div></div>`;
-  const box=api.root.querySelector(".pd-mapbox"),act=api.root.querySelector("#pdact"),res=api.root.querySelector(".pd-res"),qEl=api.root.querySelector(".pd-q");
-  const setOf=()=>G.set==="daily"?"daily":G.set,S=()=>SETS[G.set==="daily"?(G.daySet||"caps"):G.set];
+  api.root.innerHTML=`<div class="pd-wrap"><div class="pd-head"></div><div class="pd-q" aria-live="polite"></div><div class="pd-mapbox"><svg role="img" aria-label="Map: tap to drop your pin"></svg><div class="pd-zoom"><button class="btn" type="button" data-pdz="1.6" aria-label="Zoom in">+</button><button class="btn" type="button" data-pdz="0.625" aria-label="Zoom out">−</button></div></div><div class="pd-res" aria-live="polite"></div><div class="actions" id="pdact" style="justify-content:center"></div><div class="pd-more"></div></div>`;
+  const act=api.root.querySelector("#pdact"),res=api.root.querySelector(".pd-res"),qEl=api.root.querySelector(".pd-q"),more=api.root.querySelector(".pd-more");
+  const S=()=>SETS[G.cset];
+  // a game is a key: "d<date>" (that day's Daily) or "p<set>.<seed>" (a practice deal), so a friend can play the same five cities from a link
+  function deal(key){if(key[0]==="d"){const date=key.slice(1),cset=api.rng("pindrop-set|"+date)()<.5?"caps":"big";return {cset,rounds:api.shuffle(SETS[cset].list,api.rng("pindrop|"+date)).slice(0,ROUNDS)}}
+    const [cset,seed]=key.slice(1).split(".");return {cset,rounds:api.shuffle(SETS[cset].list,api.rng("pindrop-p|"+seed)).slice(0,ROUNDS)}}
+  const mine=key=>st.sets[key]||(key[0]==="d"&&st.days[key.slice(1)])||null;
+  const friends=key=>(key&&st.vs[key])||[];
+  const ans=c=>[c[3],c[2]],distOf=(pins,i)=>pins&&pins[i]?km(pins[i],ans(G.rounds[i])):null;
+  const fdists=f=>G.rounds.map((c,i)=>{const d=distOf(f.p,i);return d==null?null:Math.round(d)});
   // draw the map for this set (world or US) once per game
   function buildMap(){const W=820,world=S().proj==="world",H=world?430:520;svg=d3.select(api.root.querySelector("svg")).attr("viewBox",`0 0 ${W} ${H}`);svg.selectAll("*").remove();
     const feats=world?geo.world:geo.us;proj=world?d3.geoNaturalEarth1().fitExtent([[6,6],[W-6,H-6]],{type:"Sphere"}):d3.geoAlbersUsa().fitExtent([[10,10],[W-10,H-10]],{type:"FeatureCollection",features:feats});path=d3.geoPath(proj);
@@ -40,42 +55,73 @@ mount(api){
     zoom=d3.zoom().scaleExtent([1,12]).translateExtent([[0,0],[W,H]]).on("zoom",e=>{gMap.attr("transform",e.transform);drawPins()});svg.call(zoom).on("dblclick.zoom",null);
     svg.on("click",e=>{if(phase!=="aim")return;const [x,y]=d3.pointer(e,gMap.node()),ll=proj.invert([x,y]);if(!ll||isNaN(ll[0]))return;guess=ll;api.sound("tap");drawPins();
       act.innerHTML=`<button class="btn default" type="button" data-pd="lock">Lock it in</button>`})}
-  function pin(ll,color){const p=proj(ll);return p?p:null}
-  function drawPins(){if(!gPins)return;const k=d3.zoomTransform(svg.node()).k,r=6/k,c=G.rounds[phase==="show"?G.i-1:G.i];gPins.selectAll("*").remove();
-    if(phase==="show"&&guess&&c){const a=[c[3],c[2]],line=path({type:"LineString",coordinates:[guess,a]});if(line)gPins.append("path").attr("d",line).attr("fill","none").attr("stroke","#000").attr("stroke-width",2/k).attr("stroke-dasharray",`${5/k} ${4/k}`)}
-    if(guess){const p=pin(guess);if(p)gPins.append("circle").attr("cx",p[0]).attr("cy",p[1]).attr("r",r).attr("fill","#e00000").attr("stroke","#fff").attr("stroke-width",2/k)}
-    if(phase==="show"&&c){const p=pin([c[3],c[2]]);if(p){gPins.append("circle").attr("cx",p[0]).attr("cy",p[1]).attr("r",r).attr("fill","#00a000").attr("stroke","#fff").attr("stroke-width",2/k);
-      gPins.append("text").attr("x",p[0]+r*1.6).attr("y",p[1]+r*.6).attr("font-size",14/k).attr("font-weight",700).attr("paint-order","stroke").attr("stroke","#fff").attr("stroke-width",3/k).text(c[0])}}}
-  function fresh(){api.bar.querySelector('[data-pd="new"]').hidden=st.set==="daily";const daily=st.set==="daily",rnd=daily?api.rng("pindrop|"+today):api.begin({set:st.set});
-    const daySet=daily?(api.rng("pindrop-set|"+today)()<.5?"caps":"big"):null,list=SETS[daily?daySet:st.set].list;
-    const rounds=api.shuffle(list,rnd).slice(0,ROUNDS);G={set:st.set,daySet,rounds,i:0,dists:[],done:false};
-    if(daily&&st.days[today]){G.done=true;G.dists=st.days[today].dists;G.i=ROUNDS}
-    buildMap();guess=null;if(G.done){phase="over";over();return}aim()}
-  function head(){api.root.querySelector(".pd-head").innerHTML=`<div><small>ROUND</small><b>${Math.min(G.i+1,ROUNDS)}/${ROUNDS}</b></div><div><small>MILES OFF</small><b>${fmt(milesOf(G.dists))}</b></div>`;
-    const b=st.bestMi[G.set];api.status(G.set==="daily"?`Daily · ${SETS[G.daySet].label}`:SETS[G.set].label,b!=null?`Best: ${fmt(b)} mi`:"")}
-  function aim(){phase="aim";guess=null;const c=G.rounds[G.i];qEl.textContent=`Where is ${S().q(c)}?`;res.textContent="";act.innerHTML=`<span class="note">Tap the map to drop your pin.</span>`;
+  // pins: red is you, blue is the friend you're up against, green is the city
+  function drawPins(){if(!gPins)return;const k=d3.zoomTransform(svg.node()).k,r=6/k;gPins.selectAll("*").remove();
+    const dot=(ll,fill)=>{const p=ll&&proj(ll);if(p)gPins.append("circle").attr("cx",p[0]).attr("cy",p[1]).attr("r",r).attr("fill",fill).attr("stroke","#fff").attr("stroke-width",2/k)};
+    const label=(ll,t,fill)=>{const p=ll&&proj(ll);if(p)gPins.append("text").attr("x",p[0]+r*1.6).attr("y",p[1]+r*.6).attr("font-size",13/k).attr("font-weight",700).attr("fill",fill||"#000").attr("paint-order","stroke").attr("stroke","#fff").attr("stroke-width",3/k).text(t)};
+    const dash=(a,b)=>{const l=a&&b&&path({type:"LineString",coordinates:[a,b]});if(l)gPins.append("path").attr("d",l).attr("fill","none").attr("stroke","#000").attr("stroke-width",1.6/k).attr("stroke-dasharray",`${5/k} ${4/k}`)};
+    const f=vsNow();
+    const show=i=>{const c=G.rounds[i],a=ans(c),me=G.pins[i],them=f&&f.p&&f.p[i];dash(me,a);if(them)dot(them,"#0050e0");dot(me,"#e00000");dot(a,"#00a000");label(a,c[0]);if(them&&phase==="show")label(them,f.n,"#0050e0")};
+    if(phase==="show")show(G.i-1);else if(phase==="over")G.rounds.forEach((c,i)=>show(i));else if(guess)dot(guess,"#e00000")}
+  function vsNow(){const fr=friends(G.key);return G.vs||fr[Math.min(fi,fr.length-1)]||null}
+  function fresh(){api.bar.querySelector('[data-pd="new"]').hidden=st.set==="daily";
+    // a vault challenge or tournament run deals from the vault's seed
+    if(mo){const set=st.set==="daily"?"caps":st.set;G={key:null,vault:true,cset:set,rounds:api.shuffle(SETS[set].list,api.begin({set:st.set})).slice(0,ROUNDS)};begin();return}
+    play(st.set==="daily"?"d"+today:`p${st.set}.${Math.floor(Math.random()*4294967296).toString(36)}`,null)}
+  function play(key,vs){G=Object.assign({key,vs,daily:key==="d"+today},deal(key));fi=0;begin()}
+  function begin(){Object.assign(G,{i:0,dists:[],pins:[],done:false});buildMap();guess=null;more.innerHTML="";const m=G.key&&mine(G.key);
+    if(m){G.dists=m.dists.slice();G.pins=(m.pins||[]).slice();G.i=ROUNDS;G.done=true;phase="over";over();return}aim()}
+  function label(){return G.vault?"Challenge":G.key[0]==="d"?`Daily${G.daily?"":` · ${api.niceDate(G.key.slice(1))}`} · ${S().label}`:S().label}
+  function head(){const f=G.vs&&!G.done?G.vs:null,fd=f?fdists(f).slice(0,G.i):[];
+    api.root.querySelector(".pd-head").innerHTML=`<div><small>ROUND</small><b>${Math.min(G.i+1,ROUNDS)}/${ROUNDS}</b></div><div><small>MILES OFF</small><b>${fmt(milesOf(G.dists))}</b></div>${f?`<div><small>${api.esc(f.n.toUpperCase())}</small><b>${fmt(milesOf(fd))}</b></div>`:""}`;
+    const b=G.vault?null:st.bestMi[G.key[0]==="d"?"daily":G.cset];api.status(label(),b!=null?`Best: ${fmt(b)} mi`:"")}
+  function aim(){phase="aim";guess=null;const c=G.rounds[G.i];qEl.textContent=`Where is ${S().q(c)}?`;
+    res.innerHTML=G.vs&&G.i===0?`<span class="pd-vs">🏁 ${api.esc(G.vs.n)} was ${fmt(milesOf(fdists(G.vs)))} miles off on these cities. Can you beat that?</span>`:"";act.innerHTML=`<span class="note">Tap the map to drop your pin.</span>`;
     svg.transition().duration(api.reduced()?0:400).call(zoom.transform,d3.zoomIdentity);drawPins();head()}
-  function lock(){if(phase!=="aim"||!guess)return;const c=G.rounds[G.i],d=km(guess,[c[3],c[2]]),m=mi(Math.round(d));G.dists.push(Math.round(d));phase="show";
-    res.textContent=`${fmt(m)} miles off (${fmt(Math.round(d))} km)`;api.sound(m<=100?"win":m<=400?"ding":"tap");
-    // zoom out just enough to show both pins
-    const a=proj(guess),b=proj([c[3],c[2]]);if(a&&b){const W=820,H=+svg.attr("viewBox").split(" ")[3],dx=Math.abs(a[0]-b[0])+80,dy=Math.abs(a[1]-b[1])+80,k=Math.max(1,Math.min(8,.9/Math.max(dx/W,dy/H)));
-      svg.transition().duration(api.reduced()?0:600).call(zoom.transform,d3.zoomIdentity.translate(W/2,H/2).scale(k).translate(-(a[0]+b[0])/2,-(a[1]+b[1])/2))}
+  function lock(){if(phase!=="aim"||!guess)return;guess=[+guess[0].toFixed(2),+guess[1].toFixed(2)];const i=G.i,c=G.rounds[i],d=Math.round(km(guess,ans(c))),m=mi(d);G.dists.push(d);G.pins.push(guess);phase="show";
+    const fd=G.vs?distOf(G.vs.p,i):null,fm=fd!=null?mi(Math.round(fd)):null;
+    res.innerHTML=`${fmt(m)} miles off (${fmt(d)} km)${fm!=null?`<br><span class="pd-vs">${api.esc(G.vs.n)}: ${fmt(fm)} miles off ${fm<m?"(they win this one)":fm>m?"(you win this one)":"(tie)"}</span>`:""}`;api.sound(m<=100?"win":m<=400?"ding":"tap");
+    // zoom out just enough to show every pin
+    const pts=[guess,ans(c)].concat(fd!=null?[G.vs.p[i]]:[]).map(ll=>proj(ll)).filter(Boolean);
+    if(pts.length>1){const W=820,H=+svg.attr("viewBox").split(" ")[3],xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),dx=Math.max(...xs)-Math.min(...xs)+80,dy=Math.max(...ys)-Math.min(...ys)+80,k=Math.max(1,Math.min(8,.9/Math.max(dx/W,dy/H)));
+      svg.transition().duration(api.reduced()?0:600).call(zoom.transform,d3.zoomIdentity.translate(W/2,H/2).scale(k).translate(-(Math.max(...xs)+Math.min(...xs))/2,-(Math.max(...ys)+Math.min(...ys))/2))}
     G.i++;drawPins();head();act.innerHTML=`<button class="btn default" type="button" data-pd="next">${G.i<ROUNDS?"Next city &gt;":"See my score &gt;"}</button>`;const nb=act.querySelector("button");if(nb&&matchMedia("(pointer:fine)").matches)nb.focus({preventScroll:true})}
-  function finish(){phase="over";const tot=milesOf(G.dists),daily=G.set==="daily",prev=st.bestMi[G.set],nb=prev==null||tot<prev;if(nb)st.bestMi[G.set]=tot;G.done=true;
-    if(daily&&!st.days[today])st.days[today]={mi:tot,dists:G.dists};
-    const r=api.result(daily?{xp:Math.max(5,Math.round(30-tot/200))}:{xp:Math.max(2,Math.round(20-tot/250)),ch:{v:tot,text:`${fmt(tot)} miles off`,higher:false}});
+  function finish(){phase="over";const tot=milesOf(G.dists),bk=G.vault?null:G.key[0]==="d"?"daily":G.cset,prev=bk?st.bestMi[bk]:null,nb=bk&&(prev==null||tot<prev);if(nb)st.bestMi[bk]=tot;G.done=true;
+    if(G.daily&&!st.days[today])st.days[today]={mi:tot,dists:G.dists,pins:G.pins};
+    else if(G.key){st.sets[G.key]={dists:G.dists,pins:G.pins};const ks=Object.keys(st.sets);if(ks.length>40)ks.slice(0,ks.length-40).forEach(k=>delete st.sets[k])}
+    const r=api.result(G.daily?{xp:Math.max(5,Math.round(30-tot/200))}:{xp:Math.max(2,Math.round(20-tot/250)),ch:G.vault?{v:tot,text:`${fmt(tot)} miles off`,higher:false}:null});
     if(nb&&prev!=null)api.toast(`<span class="gmtemo">🏆</span><span><b>New best in Pin Drop!</b><br>${fmt(tot)} miles off</span>`);api.sound("win");over(r)}
-  function over(r){const tot=milesOf(G.dists),daily=G.set==="daily";head();qEl.textContent=`${fmt(tot)} miles off in total`;
-    res.innerHTML=G.rounds.map((c,i)=>`${c[0]}: ${fmt(mi(G.dists[i]||0))} mi`).join(" &middot; ")+(r&&r.xp?` &middot; +${r.xp} XP`:"");
-    act.innerHTML=daily?`<button class="btn default" type="button" data-pd="share">Share...</button><span class="note">New cities tomorrow.</span>`:`<button class="btn default" type="button" data-pd="new">Play again</button>`;drawPins()}
-  function share(btn){const d=st.days[today];if(!d)return;const dot=k=>{const m=mi(k);return m<=100?"🟢":m<=300?"🟡":m<=800?"🟠":"🔴"};
-    api.share(`Atlas95 Pin Drop · ${api.niceDate(today)}\n📍 ${fmt(milesOf(d.dists))} miles off\n${d.dists.map(dot).join("")}`,btn)}
+  // the results; with friends on the same cities, their miles sit next to yours
+  function over(r){head();const tot=milesOf(G.dists),fr=friends(G.key),f=vsNow(),fd=f?fdists(f):null,ft=fd?milesOf(fd):0;fi=f?Math.max(0,fr.indexOf(f)):0;
+    qEl.innerHTML=`${fmt(tot)} miles off${f?` vs ${api.esc(f.n)}'s ${fmt(ft)}`:" in total"}`;
+    res.innerHTML=`${f?(tot<ft?`You beat ${api.esc(f.n)}! 🏆`:tot>ft?`${api.esc(f.n)} wins this one.`:`It's a tie with ${api.esc(f.n)}!`):""}${r&&r.xp?` +${r.xp} XP`:""}`;
+    more.innerHTML=`${fr.length>1?`<div class="pd-fr" role="group" aria-label="Compare with">${fr.map((x,i)=>`<button class="btn" type="button" data-pdfr="${i}" aria-pressed="${x===f}">${api.esc(x.n)} ${fmt(milesOf(fdists(x)))} mi</button>`).join("")}</div>`:""}
+      <table class="pd-sum"><tr><th>City</th><th>You</th>${f?`<th>${api.esc(f.n)}</th>`:""}</tr>${G.rounds.map((c,i)=>{const m=G.dists[i]!=null?mi(G.dists[i]):null,o=fd&&fd[i]!=null?mi(fd[i]):null;
+        return `<tr><td>${api.esc(c[0])}</td><td class="${f&&m!=null&&o!=null&&m<o?"win":""}">${m!=null?fmt(m)+" mi":"-"}</td>${f?`<td class="${o!=null&&m!=null&&o<m?"win":""}">${o!=null?fmt(o)+" mi":"-"}</td>`:""}</tr>`}).join("")}</table>`;
+    act.innerHTML=`${G.key&&!api.nick()?`<div class="pd-name"><label for="pdnm">Your name:</label><input id="pdnm" maxlength="24" autocomplete="nickname" placeholder="So friends know it's you"></div>`:""}
+      ${G.key?`<button class="btn default" type="button" data-pd="send">${f?`Send my pins to ${api.esc(f.n)}...`:"Challenge a friend..."}</button>`:""}${G.key&&G.key[0]==="p"?`<button class="btn" type="button" data-pd="new">New cities</button>`:G.daily?`<span class="note">New cities tomorrow.</span>`:""}`;
+    svg.transition().duration(api.reduced()?0:400).call(zoom.transform,d3.zoomIdentity);drawPins()}
+  async function send(btn){const ni=act.querySelector("#pdnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const name=api.nick()||"A friend",tot=milesOf(G.dists),f=vsNow();
+    const dot=k=>{const m=mi(k);return m<=100?"🟢":m<=300?"🟡":m<=800?"🟠":"🔴"};
+    const url=api.link({k:G.key,n:name,p:G.pins});
+    const text=`Atlas95 Pin Drop · ${G.key[0]==="d"?api.niceDate(G.key.slice(1)):S().label}\n📍 ${f?`I was ${fmt(tot)} miles off vs your ${fmt(milesOf(fdists(f)))}!`:`${fmt(tot)} miles off. Can you beat me?`}\n${G.dists.map(dot).join("")}`;
+    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});res.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
+    api.share(`${text}\n${url}`,btn);res.textContent="Link copied. Paste it to a friend!"}
+  // a friend's link: keep their pins, then compare if these cities are already played, or play them with theirs alongside
+  function open(o){const p=o.p.slice(0,ROUNDS).map(x=>Array.isArray(x)&&isFinite(x[0])&&isFinite(x[1])?[+x[0],+x[1]]:null),name=String(o.n||"A friend").slice(0,24),key=String(o.k),m=mine(key);
+    const own=m&&name===api.nick()&&m.pins&&JSON.stringify(m.pins.slice(0,p.length))===JSON.stringify(p);
+    if(!own){const list=st.vs[key]=st.vs[key]||[],j=list.findIndex(x=>x.n===name),x={n:name,p};if(j>=0)list[j]=x;else list.push(x);
+      const ks=Object.keys(st.vs);if(ks.length>40)ks.slice(0,ks.length-40).forEach(k=>delete st.vs[k]);api.save()}
+    api.bar.querySelector('[data-pd="new"]').hidden=true;play(key,m||own?null:{n:name,p});const fr=friends(key);fi=Math.max(0,fr.findIndex(x=>x.n===name));if(m)over()}
   const onClick=e=>{const z=e.target.closest("[data-pdz]");if(z){svg.transition().duration(api.reduced()?0:250).call(zoom.scaleBy,+z.dataset.pdz);return}
+    const fb=e.target.closest("[data-pdfr]");if(fb){fi=+fb.dataset.pdfr;over();return}
     const b=e.target.closest("[data-pd]");if(!b)return;const k=b.dataset.pd;
-    if(k==="lock")lock();else if(k==="next"){if(G.i<ROUNDS)aim();else finish()}else if(k==="new"){if(st.set==="daily")return;fresh()}else if(k==="share")share(b)};
+    if(k==="lock")lock();else if(k==="next"){if(G.i<ROUNDS)aim();else finish()}
+    else if(k==="new"){if(st.set==="daily"){st.set=G.cset;api.bar.querySelector("[data-pdset]").value=st.set}fresh()}else if(k==="send")send(b)};
   api.on(api.root,"click",onClick);api.on(api.bar,"click",onClick);
   api.on(api.bar,"change",e=>{if(e.target.matches("[data-pdset]")){st.set=e.target.value;api.save();fresh()}});
-  fresh();
+  if(link&&typeof link==="object"&&/^(d\d{4}-\d\d-\d\d|p(caps|big|us)\.[a-z0-9]{1,12})$/.test(String(link.k))&&Array.isArray(link.p))open(link);
+  else{if(link)api.toast("That Pin Drop link didn't work. Ask your friend to send it again.");fresh()}
   return {unmount(){}};
 }};
 A95G.pindrop._t={km,SETS};
