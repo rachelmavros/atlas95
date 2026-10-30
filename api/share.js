@@ -12,7 +12,7 @@ const GAMES = {
 // every vault game, for challenge links (/g/<game>#ch=...) that carry no preview text of their own
 const NAMES = { word: "Daily Word", quad: "Quad Word", pindrop: "Pin Drop", closest: "Closest Wins", doodle: "Doodle Relay", snake: "Snake", flappy: "Flappy Globe", t2048: "2048",
   logic: "Logic Puzzles", lights: "Lights Out", sudoku: "Sudoku", mines: "Minesweeper", anagram: "Anagram Sprint", solitaire: "Solitaire", draw: "Draw from Memory",
-  circle: "Perfect Circle", memory: "Memory Match", pool: "Pool", connect4: "Connect Four", checkers: "Checkers" };
+  circle: "Perfect Circle", memory: "Memory Match", pool: "Pool", connect4: "Connect Four", checkers: "Checkers", riff: "Riff Rush", frettunes: "Fret Tunes" };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 module.exports = async (req, res) => {

@@ -2583,6 +2583,7 @@ const GM_BADGES=[
   {k:"bullseye",emo:"🎯",n:"Bullseye",d:"Guess a Closest Wins answer exactly right",t:()=>!!GV&&(vSt("closest").bulls||0)>=1},
   {k:"doodle1",emo:"🎨",n:"Doodle pal",d:"Send a friend a Doodle Relay drawing",t:()=>!!GV&&(vSt("doodle").sent||0)>=1},
   {k:"riff5",emo:"🎸",n:"Rock star",d:"Get 5 stars on a song in Riff Rush",t:()=>!!GV&&(vSt("riff").five||0)>=1},
+  {k:"fret5",emo:"🎶",n:"Strummer",d:"Get 5 stars on a song in Fret Tunes",t:()=>!!GV&&(vSt("frettunes").five||0)>=1},
   {k:"sudoku1",emo:"🔢",n:"Number cruncher",d:"Solve a Sudoku",t:()=>!!GV&&(vSt("sudoku").wins||0)>=1},
   {k:"sudokuhard",emo:"🧩",n:"Sudoku master",d:"Solve a Hard Sudoku",t:()=>!!GV&&((vSt("sudoku").lvWins||{}).hard||0)>=1},
   {k:"lights10",emo:"💡",n:"Lights out!",d:"Reach level 10 in Lights Out",t:()=>!!GV&&(vSt("lights").maxLevel||0)>=10},
@@ -3558,7 +3559,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="26";
+const VG_VER="27";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3602,12 +3603,18 @@ const VGAMES=[
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="2.5" width="12" height="12" fill="#fff" stroke="#000"/><path d="M2.5 11c1.5-4 3-4 4-1s2.5 2 3.5-3" fill="none" stroke="#e00000" stroke-width="1.2" stroke-linecap="round"/><path d="M9 9.5l5.5-8 1 .8-5.3 8.2-1.5.6z" fill="#ffd800" stroke="#000" stroke-width=".6"/><path d="M3 5h3" stroke="#0050e0" stroke-width="1.2" stroke-linecap="round"/></svg>',
     line:s=>s.guessed||s.sent?`Guessed ${s.guessed||0} · sent ${s.sent||0}`:"Draw for a friend, or guess the computer's",
     lb:{head:"Doodles guessed",empty:"Nobody has guessed a doodle yet.",board:s=>s.guessed?{g:s.guessed,f:s.first||0}:null,row:x=>({k:[-x.g,-(x.f||0)],show:`${x.g} <span class="sub">(${x.f||0} on the first try)</span>`})}},
-  {id:"riff",name:"Riff Rush",blurb:"Read the guitar tab and tap each string and fret to play the tune. Classic melodies, three levels, a song of the day, and a rhythm mode.",
+  {id:"riff",name:"Riff Rush",blurb:"Hit the notes as they reach the strings and play the tune. Classic melodies, three levels, and a song of the day.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.2 1.2l4.6 4.6-1.4 1.4-1.2-.2-3.6 3.6.2 1.6c.3 2.2-2.4 3.6-4.4 2.4L1.6 11.8C.4 9.8 1.8 7.1 4 7.4l1.6.2 3.6-3.6-.2-1.2z" fill="#e00000" stroke="#000" stroke-width=".7"/><circle cx="5" cy="11" r="1.3" fill="#000"/><path d="M3.6 9.6l2.8 2.8" stroke="#fff" stroke-width=".6"/><path d="M11 2.4l2.6 2.6" stroke="#ffd800" stroke-width="1.4"/></svg>',
-    line:s=>{const d=(s.fdays||{})[gmToday()],n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);return d?`Song of the day: ${d.s.toLocaleString("en-US")}`+(n?` · ${n} ★`:""):n?`${n} ★ earned · song of the day waiting`:"Song of the day is waiting"},
+    line:s=>{const d=(s.days||{})[gmToday()],n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);return d?`Song of the day: ${d.s.toLocaleString("en-US")}`+(n?` · ${n} ★`:""):n?`${n} ★ earned · song of the day waiting`:"Song of the day is waiting"},
     lb:{vars:[["daily","Song of the day"],["stars","Total stars"]],head:{daily:"Score",stars:"Stars"},empty:{daily:"Nobody has played today's song yet. Be the first!",stars:"No stars yet."},
-      board:s=>{const o={},n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);if(n)o.st=n;const t=gmToday(),d=(s.fdays||{})[t];if(d)o.d={d:t,s:d.s,f:1};return Object.keys(o).length?o:null},
-      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t&&x.d.f?{k:[-x.d.s],show:x.d.s.toLocaleString("en-US")}:null):x.st?{k:[-x.st],show:`${x.st} ★`}:null}},
+      board:s=>{const o={},n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);if(n)o.st=n;const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,s:d.s};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[-x.d.s],show:x.d.s.toLocaleString("en-US")}:null):x.st?{k:[-x.st],show:`${x.st} ★`}:null}},
+  {id:"frettunes",name:"Fret Tunes",blurb:"Play a song on the guitar: read the tab, press the right string and fret, and the note plays. Or just strum around.",deps:["riff"],
+    icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="3.5" width="15" height="9" fill="#c89660" stroke="#000"/><path d="M5 3.5v9M9 3.5v9M13 3.5v9" stroke="#e0e0e0" stroke-width="1.2"/><path d="M.5 5.3h15M.5 7.1h15M.5 8.9h15M.5 10.7h15" stroke="#303030" stroke-width=".6"/><circle cx="7" cy="8" r="1.8" fill="#ffd800" stroke="#000" stroke-width=".6"/></svg>',
+    line:s=>{const d=(s.days||{})[gmToday()],n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);return d?`Song of the day: ${d.s.toLocaleString("en-US")}`+(n?` · ${n} ★`:""):n?`${n} ★ earned · song of the day waiting`:"Song of the day is waiting"},
+    lb:{vars:[["daily","Song of the day"],["stars","Total stars"]],head:{daily:"Score",stars:"Stars"},empty:{daily:"Nobody has played today's song yet. Be the first!",stars:"No stars yet."},
+      board:s=>{const o={},n=Object.values(s.best||{}).reduce((a,b)=>a+(b.stars||0),0);if(n)o.st=n;const t=gmToday(),d=(s.days||{})[t];if(d)o.d={d:t,s:d.s};return Object.keys(o).length?o:null},
+      row:(x,v,{t})=>v==="daily"?(x.d&&x.d.d===t?{k:[-x.d.s],show:x.d.s.toLocaleString("en-US")}:null):x.st?{k:[-x.st],show:`${x.st} ★`}:null}},
   {id:"snake",name:"Snake",blurb:"Eat the apples, grow longer, don't bite your tail.",
     icon:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y=".5" width="15" height="15" fill="#000"/><path d="M2.5 13.5h5v-5h-4v-5h8v6" fill="none" stroke="#00c000" stroke-width="2.2" stroke-linejoin="round"/><rect x="10.3" y="11" width="2.4" height="2.4" fill="#ff3030"/></svg>',
     lb:{head:"Best",empty:"No Snake scores yet.",board:s=>s.best!=null?s.best:null,row:x=>({k:[-x],show:`${x} apple${x===1?"":"s"}`})}},
@@ -3702,7 +3709,9 @@ function vApi(g){
     _off(){offs.splice(0).forEach(f=>f())},
     css(text){const id="vgcss-"+g.id;if(!vEl(id)){const s=document.createElement("style");s.id=id;s.textContent=text;document.head.appendChild(s)}},
     status(a,b){vEl("vst1").textContent=a||"";vEl("vst2").textContent=b||"";vStatusXP()},
-    sound(k){if(!GV.set.mute)vBeep(k)},muted:()=>!!GV.set.mute,units:()=>GM.set.units==="metric"?"metric":"us",
+    sound(k){if(!GV.set.mute)vBeep(k)},muted:()=>!!GV.set.mute,
+    // the vault's shared AudioContext (woken on taps; null if there is no Web Audio)
+    audio:()=>vAudio(),units:()=>GM.set.units==="metric"?"metric":"us",
     // record a settled result against a friend for the Friend log: {k (unique), n (friend), me, them, res "w"/"l"/"t"/null, what, d, view:{data} to reopen it, keep}
     log:e=>vLog(Object.assign({g:g.id},e)),
     toast:gmToast,
@@ -3730,7 +3739,18 @@ function vApi(g){
 const VG_SFX={eat:[[79],0,"square",.07,.06],ding:[[72,76,79],.06,"square",.1,.05],win:[[72,76,79,84],.09,"square",.16,.06],lose:[[55,50],.16,"square",.22,.06],flip:[[84],0,"triangle",.05,.12],drop:[[60],0,"triangle",.09,.16],tap:[[76],0,"triangle",.04,.1]};
 let vAC=null;
 // opening a game starts the audio engine, so the first beep doesn't stall a tap
-function vAudio(){try{if(!vAC){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;vAC=new AC()}if(vAC.state==="suspended")vAC.resume()}catch(e){return null}return vAC}
+// On iPhones, web audio counts as "ambient" sound, which the silent switch mutes. Asking for "playback" (iOS 17+), or keeping a
+// silent HTML audio track playing (older iOS), lets game sounds through like music. Both need a tap, so vAudio runs on taps.
+let vSilent=null;
+function vUnmute(){try{if(navigator.audioSession&&navigator.audioSession.type!=="playback")navigator.audioSession.type="playback"}catch(e){}
+  const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);if(navigator.audioSession||!ios)return;
+  try{if(!vSilent){const n=800,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
+      w(0,"RIFF");v.setUint32(4,36+n,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,"data");v.setUint32(40,n,true);b.fill(128,44);
+      let bin="";b.forEach(x=>bin+=String.fromCharCode(x));vSilent=new Audio("data:audio/wav;base64,"+btoa(bin));vSilent.loop=true;vSilent.setAttribute("playsinline","")}
+    if(vSilent.paused){const pr=vSilent.play();if(pr&&pr.catch)pr.catch(()=>{})}}catch(e){}}
+function vAudio(){try{if(!GV.set.mute)vUnmute();if(!vAC){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;vAC=new AC()}if(vAC.state==="suspended")vAC.resume()}catch(e){return null}return vAC}
+// wake the audio on the first taps in the vault (a game opened from a link starts without one)
+["pointerdown","keydown"].forEach(t=>document.getElementById("vwin").addEventListener(t,()=>{if(!GV.set.mute&&(!vAC||vAC.state!=="running"||(vSilent&&vSilent.paused)))vAudio()},true));
 function vBeep(k){const S=VG_SFX[k];if(!S||!vAudio())return;try{
   const [notes,gap,type,dur,vol]=S,t0=vAC.currentTime+.005;
   notes.forEach((m,i)=>{const o=vAC.createOscillator(),g=vAC.createGain(),t=t0+i*gap;o.type=type;o.frequency.value=440*Math.pow(2,(m-69)/12);
@@ -3772,7 +3792,7 @@ document.getElementById("vwin").addEventListener("click",e=>{const lb=e.target.c
   if(b.hasAttribute("data-vhome")){vHome();return}
   if(b.hasAttribute("data-vhelp")){vHelp();return}
   if(b.hasAttribute("data-vclose")){VDLG.innerHTML="";return}
-  if(b.hasAttribute("data-vmute")){GV.set.mute=!GV.set.mute;vSave();document.querySelectorAll("[data-vmute]").forEach(x=>{x.outerHTML=vMuteBtn()})}});
+  if(b.hasAttribute("data-vmute")){GV.set.mute=!GV.set.mute;vSave();if(GV.set.mute){if(vSilent)vSilent.pause()}else vAudio();document.querySelectorAll("[data-vmute]").forEach(x=>{x.outerHTML=vMuteBtn()})}});
 function vScoreRows(){const rows=VGAMES.map(g=>{const s=GV.st[g.id]||{};return `<tr><td>${esc(g.name)}</td><td>${s.plays||0}</td><td>${esc(g.line?g.line(s):s.bestText||"--")}</td></tr>`}).join("");
   return `<div class="group"><span class="legend">Game Vault</span><table class="gmtable"><thead><tr><th>Game</th><th>Played</th><th>Best</th></tr></thead><tbody>${rows}</tbody></table>${GV.troph&&GV.troph.length?`<div>Tournament trophies: ${GV.troph.map(t=>`${["🥇","🥈","🥉"][t.place-1]} ${esc((vGame(t.g)||{}).name||"")} <span class="sub">(week of ${esc(vWeekStart(t.w).toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"}))})</span>`).join(" &middot; ")}</div>`:""}<div class="actions"><button class="btn" type="button" data-open="vault">${JOY16} Open the Game Vault</button></div></div>`}
 
