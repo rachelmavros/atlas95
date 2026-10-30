@@ -3116,6 +3116,7 @@ function gmSettingsHTML(){
       <div style="margin-top:4px">Topics that can come up on the wheel:</div><div class="gmtopics">${GM_TOPICS.map(t=>`<label class="cb"><input type="checkbox" data-gmtopic="${t.k}"${en.includes(t.k)?" checked":""}> ${t.emo} ${esc(t.label)}</label>`).join("")}</div>
       <div class="actions"><button class="btn" type="button" data-gmtopics="all">Select all</button><span class="note" id="gmtnote"></span></div></div>
     <div class="group"><span class="legend">Daily lessons</span>${gmLessons().length?`<div class="gmlist">${gmLessons().map(L=>`<div class="gmlrow"><span class="gmlemo" aria-hidden="true">${gmLesEmo(L.topic)}</span><div class="gmlmid"><b>${esc(gmLesName(L.topic,L.lang))}</b><div class="note">${GM_LEN[L.len]||10} questions a day${L.popup===false?"":" &middot; pop-up reminder"}</div></div><button class="btn" type="button" data-gmlesset="${L.id}">Edit...</button></div>`).join("")}</div>`:"<div>Not set up yet.</div>"}<div class="actions"><button class="btn" type="button" data-gmlesset="new">${gmLessons().length?"+ Add a subject...":"Set up..."}</button></div></div>
+    <div class="group"><span class="legend">Units</span><label class="row" style="align-items:center">Show measurements in <select class="sel95" data-gmset="units"><option value="us"${GM.set.units!=="metric"?" selected":""}>US (feet, miles, °F)</option><option value="metric"${GM.set.units==="metric"?" selected":""}>Metric (meters, km, °C)</option></select></label><div class="note">Used in Closest Wins. Friends on the other setting still compare fairly.</div></div>
     <div class="group"><span class="legend">Leaderboard name</span><form class="row" id="gmnickf" autocomplete="off"><input class="gmin" id="gmnick" type="text" maxlength="24" placeholder="Your name or nickname" value="${esc(GM.set.nick||"")}" aria-label="Leaderboard name"><button class="btn default" type="submit">Save</button></form><div class="note">${GM_SB?"This is the name other players see. Don't use your full name.":"Leave it blank to use your Claude name."}</div></div>
     ${GM_SB&&gmDB&&gmDB.remove?`<div class="group"><span class="legend">Leaderboard entry</span><div class="actions"><button class="btn" type="button" id="gmunlist">Remove me from the leaderboard</button></div><div class="note">Deletes your name and scores from the shared board. Playing again later adds you back.</div></div>`:""}
     ${window.ATLAS95_PRIVACY_URL?`<div class="note"><a class="link" href="${esc(window.ATLAS95_PRIVACY_URL)}" target="_blank" rel="noopener">Privacy policy</a></div>`:""}
@@ -3163,6 +3164,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{const i=e.target;if(!i.matches||!i.matches("[data-gmset],[data-gmtopic]"))return;
   if(i.dataset.gmset==="timer"){gmSetTimer(i.checked);buildStart();return}
   if(i.dataset.gmset==="popup"){GM.set.popup=i.checked;gmSave();return}
+  if(i.dataset.gmset==="units"){GM.set.units=i.value==="metric"?"metric":"us";gmSave();return}
   if(i.dataset.gmset==="tpopup"){GM.set.tpopup=i.checked;gmSave();return}
   if(i.dataset.gmtopic){const sel=[...document.querySelectorAll("[data-gmtopic]")].filter(x=>x.checked).map(x=>x.dataset.gmtopic);
     if(!sel.length){i.checked=true;const n=document.getElementById("gmtnote");if(n)n.textContent="Keep at least one topic.";return}
@@ -3556,7 +3558,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-gtclose],[
 
 // ================= Game Vault: quick games, one file each in games/, loaded the first time a game is opened =================
 // A game file registers A95G.<id>={help,mount(api)}; mount returns {unmount,pause} (both optional). See vApi for what a game gets.
-const VG_VER="24";
+const VG_VER="25";
 window.A95G=window.A95G||{};
 const JOY16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 11h11l1.5 3.5H1z" fill="#c0c0c0" stroke="#000" stroke-linejoin="round"/><path d="M8 11V5.5" stroke="#000" stroke-width="2"/><circle cx="8" cy="4" r="2.8" fill="#e00000" stroke="#000"/><circle cx="7" cy="3" r=".8" fill="#fff"/><circle cx="12" cy="12.6" r=".9" fill="#ffd800" stroke="#000" stroke-width=".5"/></svg>';
 const WORD16='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x=".5" y="5" width="4.6" height="6" fill="#6aaa64" stroke="#000"/><rect x="5.7" y="5" width="4.6" height="6" fill="#c9b458" stroke="#000"/><rect x="10.9" y="5" width="4.6" height="6" fill="#787c7e" stroke="#000"/><path d="M1.8 9.5l1-3 1 3M7 6.5h2l-2 3h2M12.2 6.5v3h2" fill="none" stroke="#fff" stroke-width=".9"/></svg>';
@@ -3700,7 +3702,7 @@ function vApi(g){
     _off(){offs.splice(0).forEach(f=>f())},
     css(text){const id="vgcss-"+g.id;if(!vEl(id)){const s=document.createElement("style");s.id=id;s.textContent=text;document.head.appendChild(s)}},
     status(a,b){vEl("vst1").textContent=a||"";vEl("vst2").textContent=b||"";vStatusXP()},
-    sound(k){if(!GV.set.mute)vBeep(k)},muted:()=>!!GV.set.mute,
+    sound(k){if(!GV.set.mute)vBeep(k)},muted:()=>!!GV.set.mute,units:()=>GM.set.units==="metric"?"metric":"us",
     // record a settled result against a friend for the Friend log: {k (unique), n (friend), me, them, res "w"/"l"/"t"/null, what, d, view:{data} to reopen it, keep}
     log:e=>vLog(Object.assign({g:g.id},e)),
     toast:gmToast,

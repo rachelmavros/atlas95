@@ -194,6 +194,29 @@ const CATS={
 // the four built from data, then the hand-written ones
 const GEN_CATS={Population:"pop",Area:"area","US Presidents":"pres",Elements:"elem"};
 const ALL_CATS=Object.keys(GEN_CATS).concat(Object.keys(CATS));
+// Display units. Questions are written in one unit each; answers and guesses are stored and scored in that unit,
+// so players on different settings compare fairly. US (the default) shows feet, miles, °F...; Metric shows meters, km, °C.
+const TO_US={meters:["feet",3.28084],km:["miles",.621371],"km/h":["mph",.621371],"square km":["square miles",.386102],kg:["pounds",2.20462],cm:["inches",.393701],
+  tonnes:["tons",1.10231],liters:["quarts",1.05669],"meters per second":["feet per second",3.28084],"km per second":["miles per second",.621371],"°C":["°F","C"]};
+const TO_METRIC={feet:["meters",.3048],"°F":["°C","F"]};
+// questions whose wording names the unit, or that are best known in one system
+const UNIT_TEXT={
+  "How many degrees below zero Celsius is absolute zero?":{us:["How many degrees below zero Fahrenheit is absolute zero?",460,"degrees"]},
+  "How many degrees below zero °C is the coldest temperature ever recorded on Earth?":{us:["How many degrees below zero °F is the coldest temperature ever recorded on Earth?",128.6,"degrees"]},
+  "How fast do things fall at Earth's surface, in meters per second squared?":{us:["How fast do things fall at Earth's surface, in feet per second squared?",32.2,"ft/s²"]},
+  "How fast does light travel, in km per hour?":{us:["How fast does light travel, in miles per hour?",670600000,"mph"]},
+  "At what temperature does water boil at sea level, in Fahrenheit?":{metric:["At what temperature does water boil at sea level, in Celsius?",100,"°C"]},
+  "What is normal body temperature in Fahrenheit?":{metric:["What is normal body temperature in Celsius?",37,"°C"]},
+  "How long is an Olympic swimming pool?":{keep:1}};
+const nice=v=>v>=1e6?+v.toPrecision(3):v>=100?Math.round(v):v>=10?Math.round(v*10)/10:Math.round(v*100)/100;
+// q -> the same question as shown: q, a, u in display units, plus c (stored -> shown) and ci (shown -> stored)
+function localize(q,units){const id=x=>x,base=Object.assign({},q,{a0:q.a,c:id,ci:id});if(q.k!=="n")return base;
+  const o=UNIT_TEXT[q.q];if(o&&o.keep)return base;
+  if(o&&o[units]){const [t,a,u]=o[units],f=a/q.a;return Object.assign(base,{q:t,a,u,c:v=>v*f,ci:v=>v/f})}
+  const m=(units==="metric"?TO_METRIC:TO_US)[q.u];if(!m)return base;
+  const [u,f]=m;if(f==="C")return Object.assign(base,{u,a:nice(q.a*9/5+32),c:v=>v*9/5+32,ci:v=>(v-32)*5/9});
+  if(f==="F")return Object.assign(base,{u,a:nice((q.a-32)*5/9),c:v=>(v-32)*5/9,ci:v=>v*9/5+32});
+  return Object.assign(base,{u,a:nice(q.a*f),c:v=>v*f,ci:v=>v/f})}
 const QN=7;
 const CSS=`
 .cw-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:560px;margin:0 auto}
@@ -220,7 +243,7 @@ const CSS=`
 // "1,200", "1.2k", "3.5 million", "8bn" -> number (NaN if it doesn't parse)
 function parse(t){t=String(t).toLowerCase().replace(/[,\s_]/g,"").replace(/^~/,"");const m=t.match(/^(-?\d*\.?\d+)(k|thousand|m|mil|mill|million|b|bn|bil|billion|t|trillion)?$/);if(!m)return NaN;
   const mul={k:1e3,thousand:1e3,m:1e6,mil:1e6,mill:1e6,million:1e6,b:1e9,bn:1e9,bil:1e9,billion:1e9,t:1e12,trillion:1e12}[m[2]]||1;return parseFloat(m[1])*mul}
-function score(q,g){if(!isFinite(g))return 0;if(q.k==="y")return Math.max(0,Math.round(100-2*Math.abs(g-q.a)));if(q.k==="z")return Math.max(0,Math.round(100-100*Math.abs(g-q.a)/40));
+function score(q,g){if(!isFinite(g))return 0;if(q.a0!=null)q={k:q.k,a:q.a0};if(q.k==="y")return Math.max(0,Math.round(100-2*Math.abs(g-q.a)));if(q.k==="z")return Math.max(0,Math.round(100-100*Math.abs(g-q.a)/40));
   if(g<=0)return 0;return Math.max(0,Math.round(100*(1-Math.abs(Math.log(g/q.a))/Math.log(4))))}
 function fmt(v,q){if(q&&q.k!=="n")return String(Math.round(v));const a=Math.abs(v);if(a>=1e9)return +(v/1e9).toPrecision(3)+" billion";if(a>=1e7)return +(v/1e6).toPrecision(3)+" million";return v.toLocaleString("en-US",{maximumFractionDigits:a<10?2:a<100?1:0})}
 // questions built from the app's own data, so the bank never runs dry
@@ -272,9 +295,9 @@ mount(api){
   const friends=key=>st.vs[key]||[];
   function fresh(){api.bar.querySelector('[data-cw="new"]').hidden=st.mode==="daily";
     // a vault challenge or tournament run deals from the vault's seed; otherwise the set key does
-    if(mo){G={key:null,qs:build(api,api.begin({})),vault:true};begin();return}
+    if(mo){G={key:null,qs:build(api,api.begin({})).map(x=>localize(x,api.units())),vault:true};begin();return}
     play(st.mode==="daily"?"d"+today:"q"+Math.floor(Math.random()*4294967296).toString(36),null)}
-  function play(key,vs){G={key,qs:isV2(key)?build2(api,key):build(api,rngFor(api,key)),vs,daily:key==="d"+today};fi=0;begin()}
+  function play(key,vs){G={key,qs:(isV2(key)?build2(api,key):build(api,rngFor(api,key))).map(x=>localize(x,api.units())),vs,daily:key==="d"+today};fi=0;begin()}
   function begin(){Object.assign(G,{i:0,g:[],pts:[],done:false});const m=G.key&&mine(G.key);
     if(m){G.g=m.g.slice();G.pts=G.qs.map((q,i)=>score(q,G.g[i]));G.i=QN;G.done=true;over();return}ask()}
   function tot(){return G.pts.reduce((a,b)=>a+b,0)}
@@ -297,12 +320,12 @@ mount(api){
   function off(q,g){if(!isFinite(g))return "No guess";if(g===q.a)return "Exactly right!";
     if(q.k!=="n"){const d=Math.abs(g-q.a);return `${d.toLocaleString("en-US")} ${q.k==="y"?(d===1?"year":"years"):""} too ${g<q.a?(q.k==="y"?"early":"low"):(q.k==="y"?"late":"high")}`.replace("  "," ")}
     if(g<=0)return "Too low";const r=Math.max(g,q.a)/Math.min(g,q.a);return r<1.1?`Within ${Math.max(1,Math.round((r-1)*100))}%`:`${r<10?r.toFixed(1):Math.round(r).toLocaleString("en-US")}× too ${g<q.a?"low":"high"}`}
-  function guess(){const g=val(),q=G.qs[G.i];if(!isFinite(g)){const p=main.querySelector(".cw-prev");if(p)p.textContent="Type a number first.";return}
-    const pts=score(q,g),i=G.i;G.g.push(g);G.pts.push(pts);G.i++;head();if(pts===100)st.bulls=(st.bulls||0)+1;api.sound(pts>=90?"win":pts>=50?"ding":pts>0?"tap":"lose");
+  function guess(){const gd=val(),q=G.qs[G.i];if(!isFinite(gd)){const p=main.querySelector(".cw-prev");if(p)p.textContent="Type a number first.";return}
+    const g=q.ci(gd),pts=score(q,g),i=G.i;G.g.push(g);G.pts.push(pts);G.i++;head();if(pts===100)st.bulls=(st.bulls||0)+1;api.sound(pts>=90?"win":pts>=50?"ding":pts>0?"tap":"lose");
     const fg=G.vs&&G.vs.g[i],fp=fg!=null?score(q,fg):null;
     main.innerHTML=`<div class="cw-cat">${api.esc(q.cat)}</div><div class="cw-q">${api.esc(q.q)}</div>
-      <div class="cw-res"><div class="cw-big">${fmt(q.a,q)} ${api.esc(q.u||"")}</div>You said ${fmt(g,q)}. ${off(q,g)} &middot; <b>+${pts}</b></div>${line(q,g)}
-      ${fp!=null?`<div class="cw-vs">${api.esc(G.vs.n)} said ${fmt(fg,q)} &middot; +${fp} ${fp>pts?"(they win this one)":fp<pts?"(you win this one)":"(tie)"}</div>`:""}
+      <div class="cw-res"><div class="cw-big">${fmt(q.a,q)} ${api.esc(q.u||"")}</div>You said ${fmt(gd,q)}. ${off(q,gd)} &middot; <b>+${pts}</b></div>${line(q,gd)}
+      ${fp!=null?`<div class="cw-vs">${api.esc(G.vs.n)} said ${fmt(q.c(fg),q)} &middot; +${fp} ${fp>pts?"(they win this one)":fp<pts?"(you win this one)":"(tie)"}</div>`:""}
       <div class="cw-in"><button class="btn default" type="button" data-cw="next">${G.i<QN?"Next question &gt;":"See my score &gt;"}</button></div>`;
     const nb=main.querySelector('[data-cw="next"]');if(matchMedia("(pointer:fine)").matches)nb.focus({preventScroll:true})}
   function finish(){const t=tot(),prev=st.best,nb=prev==null||t>prev;if(nb)st.best=t;st.games=(st.games||0)+1;G.done=true;
@@ -317,7 +340,7 @@ mount(api){
     main.innerHTML=`<div class="cw-res"><div class="cw-big">${t}${f?` <span style="font-size:20px">vs</span> ${ft}`:""} <span style="font-size:16px">/ ${QN*100}</span></div>${verdict?`<b>${verdict}</b><br>`:""}${r&&r.xp?`+${r.xp} XP`:""}</div>
       ${fr.length>1?`<div class="cw-fr" role="group" aria-label="Compare with">${fr.map((x,i)=>`<button class="btn" type="button" data-cwfr="${i}" aria-pressed="${x===f}">${api.esc(x.n)} ${totalOf(G.qs,x.g)}</button>`).join("")}</div>`:""}
       <table class="cw-sum"><tr><th>Question</th><th>You</th>${f?`<th>${api.esc(f.n)}</th>`:""}</tr>${G.qs.map((q,i)=>{const mp=G.pts[i],fp=f&&f.g[i]!=null?score(q,f.g[i]):null;
-        return `<tr><td>${api.esc(q.q)}<br><span class="note">Answer ${fmt(q.a,q)} ${api.esc(q.u||"")} &middot; you ${G.g[i]!=null?fmt(G.g[i],q):"-"}${f?` &middot; ${api.esc(f.n)} ${f.g[i]!=null?fmt(f.g[i],q):"-"}`:""}</span></td><td class="cw-p${f&&mp>fp?" win":""}">${mp!=null?mp:"-"}</td>${f?`<td class="cw-p${fp>mp?" win":""}">${fp!=null?fp:"-"}</td>`:""}</tr>`}).join("")}</table>
+        return `<tr><td>${api.esc(q.q)}<br><span class="note">Answer ${fmt(q.a,q)} ${api.esc(q.u||"")} &middot; you ${G.g[i]!=null?fmt(q.c(G.g[i]),q):"-"}${f?` &middot; ${api.esc(f.n)} ${f.g[i]!=null?fmt(q.c(f.g[i]),q):"-"}`:""}</span></td><td class="cw-p${f&&mp>fp?" win":""}">${mp!=null?mp:"-"}</td>${f?`<td class="cw-p${fp>mp?" win":""}">${fp!=null?fp:"-"}</td>`:""}</tr>`}).join("")}</table>
       ${G.key&&!api.nick()?`<div class="cw-name"><label for="cwnm">Your name:</label><input id="cwnm" maxlength="24" autocomplete="nickname" placeholder="So friends know it's you"></div>`:""}
       <div class="cw-in">${G.key?`<button class="btn default" type="button" data-cw="send">${f?`Send my answers to ${api.esc(f.n)}...`:"Challenge a friend..."}</button>`:""}${!G.daily&&!G.vault?`<button class="btn" type="button" data-cw="new">New questions</button>`:""}</div>
       <div class="cw-prev" aria-live="polite">${G.daily?"New questions tomorrow.":""}</div>`;if(G.key)cwLink()}
@@ -327,7 +350,7 @@ mount(api){
     if(!prep||prep.key!==key)prep={key,p:api.shareLink({k:G.key,n:name,g:G.g.map(v=>+(+v).toPrecision(6))},name)};return prep.p}
   async function send(btn){const ni=main.querySelector("#cwnm");if(ni&&ni.value.trim())api.nick(ni.value.trim());const t=tot(),fr=friends(G.key),f=fr[Math.min(fi,fr.length-1)];
     const url=await cwLink();
-    const text=`🎯 Closest Wins on Atlas95${G.key[0]==="d"?` · ${api.niceDate(G.key.slice(1))}`:""}\n${f?`I got ${t} vs your ${totalOf(G.qs,f.g)}!`:`I scored ${t}/${QN*100}. Can you get closer? 🎯`}\n${G.pts.map(emo).join("")}`;
+    const text=`🎯 Closest Wins on Atlas95${G.key[0]==="d"?` · ${api.niceDate(G.key.slice(1))}`:""}\n${f?`I got ${t} vs your ${totalOf(G.qs,f.g)}!`:`I scored ${t}/${QN*100}. Can you get closer?`}\n${G.pts.map(emo).join("")}`;
     const msg=main.querySelector(".cw-prev");
     if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({text:`${text}\n${url}`});if(msg)msg.textContent="Sent!";return}catch(e){if(e&&e.name==="AbortError")return}}
     api.share(`${text}\n${url}`,btn);if(msg)msg.textContent="Link copied. Paste it to a friend!"}
