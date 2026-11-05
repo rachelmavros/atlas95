@@ -724,11 +724,23 @@ function pickFact(c){
 
 // speech
 const canSpeak="speechSynthesis" in window&&typeof SpeechSynthesisUtterance!=="undefined";
+// Speaking, made sturdy for iPhones: ask for "playback" audio so the silent switch doesn't mute it (vUnmute, in the Game Vault code),
+// leave a beat after cancelling (iOS can drop speech queued right after cancel()), and if nothing starts, try again more simply.
+// tries: [{text, lang, voice}] from best to plainest.
+let sayN=0;
+function say(tries,rate){if(!canSpeak||!tries.length)return;const n=++sayN;
+  try{if(typeof vUnmute==="function")vUnmute()}catch(e){}
+  const busy=speechSynthesis.speaking||speechSynthesis.pending;if(busy)speechSynthesis.cancel();
+  const go=i=>{if(n!==sayN)return;const t=tries[i];if(!t){if(typeof gmToast==="function")gmToast(`<span><b>Couldn't play the pronunciation</b><br>Check that your volume is up. On an iPhone, also check the silent switch on the side.</span>`);return}
+    let started=false;const u=new SpeechSynthesisUtterance(t.text);u.rate=rate;if(t.lang)u.lang=t.lang;if(t.voice)u.voice=t.voice;
+    u.onstart=()=>{started=true};u.onerror=e=>{if(!started&&n===sayN&&e.error!=="interrupted"&&e.error!=="canceled")go(i+1)};
+    try{if(speechSynthesis.paused)speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){go(i+1);return}
+    setTimeout(()=>{if(!started&&n===sayN){try{speechSynthesis.cancel()}catch(e){}setTimeout(()=>go(i+1),60)}},1800)};
+  setTimeout(()=>go(0),busy?80:0)}
 function speak(text){
   if(!canSpeak)return;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=0.9;
-    const v=speechSynthesis.getVoices().find(v=>/^en(-|_)US/i.test(v.lang))||speechSynthesis.getVoices().find(v=>/^en/i.test(v.lang));if(v)u.voice=v;
-    speechSynthesis.speak(u)}catch(e){}
+  const vs=speechSynthesis.getVoices(),v=vs.find(v=>/^en(-|_)US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang));
+  say([{text,lang:v?v.lang:"en-US",voice:v},{text,lang:"en-US"}],0.9)
 }
 if(canSpeak){try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}}
 const SPK='<svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><path d="M1 5h3l4-4v12l-4-4H1z" fill="#000"/><path d="M10.5 4.5c1 .8 1 4.2 0 5M12.5 2.5c2 1.8 2 7.2 0 9" fill="none" stroke="#000" stroke-width="1.4"/></svg>';
@@ -1492,13 +1504,13 @@ if(canSpeak&&speechSynthesis.addEventListener)speechSynthesis.addEventListener("
 function speakLang(text,lang,_retry){
   if(!canSpeak)return;const L=LANGS[lang];
   if(!voicesReady&&!_retry){speechSynthesis.getVoices();setTimeout(()=>speakLang(text,lang,true),350);return}
-  try{speechSynthesis.cancel();let say=text.replace(/…/g," ").trim();const v=voiceFor(L.bcp);
-    const u=new SpeechSynthesisUtterance(say);u.rate=0.85;
-    if(v){u.voice=v;u.lang=v.lang}
-    else if(!L.latin){const rom=romOf.get(lang+"|"+text);if(rom){u.text=rom.replace(/…/g," ");u.lang="en-US"}
-      if(!noVoiceWarned[lang]&&typeof gmToast==="function"){noVoiceWarned[lang]=true;gmToast(`<span><b>No ${esc(L.name)} voice on this device</b><br>Playing an approximate reading of the pronunciation guide. You can add a ${esc(L.name)} voice in your device's speech or language settings.</span>`)}}
-    else u.lang=L.bcp;
-    speechSynthesis.speak(u)}catch(e){}
+  try{const txt=text.replace(/…/g," ").trim(),v=voiceFor(L.bcp),rom=!L.latin?romOf.get(lang+"|"+text):null,romT=rom?rom.replace(/…/g," "):null;
+    // best first: the language's own voice, then the language with the device's default voice, then the romanized guide read in English
+    const tries=[];if(v)tries.push({text:txt,lang:v.lang,voice:v});
+    if(v||L.latin)tries.push({text:txt,lang:L.bcp});
+    if(romT)tries.push({text:romT,lang:"en-US"});
+    if(!v&&!L.latin&&!noVoiceWarned[lang]&&typeof gmToast==="function"){noVoiceWarned[lang]=true;gmToast(`<span><b>No ${esc(L.name)} voice on this device</b><br>Playing an approximate reading of the pronunciation guide. You can add a ${esc(L.name)} voice in your device's speech or language settings.</span>`)}
+    say(tries.length?tries:[{text:txt,lang:L.bcp}],0.85)}catch(e){}
 }
 const pSay=(p,lang,label)=>canSpeak?`<button class="btn" type="button" data-psay="${p.id}" aria-label="Hear it in ${LANGS[lang].name}">${SPK} ${label||"Hear it"}</button>`:"";
 
