@@ -23,17 +23,24 @@ const CSS=`
 const KEYS={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",w:"up",s:"down",a:"left",d:"right"};
 A95G.t2048={
 help:`<div>Slide all the tiles at once. When two tiles with the same number touch, they merge into one: 2+2 makes 4, 4+4 makes 8, and so on. Every move adds a new tile.</div>
-<ul class="factlist"><li><b>Computer:</b> arrow keys or W A S D.</li><li><b>Phone:</b> swipe on the board.</li><li>Reach the <b>2048</b> tile to win, then keep going for a higher score. The game ends when no move is left.</li><li>Your game is saved, so you can come back to it later.</li></ul>`,
+<ul class="factlist"><li><b>Computer:</b> arrow keys or W A S D. U (or Ctrl+Z) to undo.</li><li><b>Phone:</b> swipe on the board.</li><li>Reach the <b>2048</b> tile to win, then keep going for a higher score. The game ends when no move is left.</li><li><b>Undo</b> takes back a move (up to 20). Using it turns that game into <b>practice</b>: it won't count toward your best score. A new game counts again.</li><li>Your game is saved, so you can come back to it later.</li></ul>`,
 mount(api){
-  api.css(CSS);const st=api.stats;let tiles,score,nextId=1,over=false,won,busy=false,els=new Map(),timer=null,rnd=Math.random;
-  api.bar.innerHTML=`<button class="btn" type="button" data-t48="new">New game</button>`;
-  api.root.innerHTML=`<div class="t48-wrap"><div class="t48-score"><div><small>SCORE</small><b id="t48s">0</b></div><div><small>BEST</small><b id="t48b">0</b></div></div><div class="t48-board" aria-label="2048 board" role="application">${[...Array(16)].map((_,i)=>`<div class="t48-cell" style="left:${i%4*25}%;top:${Math.floor(i/4)*25}%"></div>`).join("")}</div><div class="note">Swipe or use the arrow keys.</div></div>`;
+  api.css(CSS);const st=api.stats;let tiles,score,nextId=1,over=false,won,busy=false,els=new Map(),timer=null,rnd=Math.random,hist=[],practice=false;
+  api.bar.innerHTML=`<button class="btn" type="button" data-t48="new">New game</button><button class="btn" type="button" data-t48="undo" disabled>Undo</button>`;
+  api.root.innerHTML=`<div class="t48-wrap"><div class="t48-score"><div><small id="t48sl">SCORE</small><b id="t48s">0</b></div><div><small>BEST</small><b id="t48b">0</b></div></div><div class="t48-board" aria-label="2048 board" role="application">${[...Array(16)].map((_,i)=>`<div class="t48-cell" style="left:${i%4*25}%;top:${Math.floor(i/4)*25}%"></div>`).join("")}</div><div class="note">Swipe or use the arrow keys.</div></div>`;
   const board=api.root.querySelector(".t48-board");
   const at=(r,c)=>tiles.find(t=>t.r===r&&t.c===c&&!t.gone);
   function addTile(){const free=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!at(r,c))free.push([r,c]);if(!free.length)return;const [r,c]=free[Math.floor(rnd()*free.length)];tiles.push({id:nextId++,r,c,v:rnd()<.9?2:4,fresh:true})}
-  function fresh(){rnd=api.begin({});tiles=[];score=0;over=false;won=false;addTile();addTile();save();draw()}
-  function save(){st.game=over?null:{t:tiles.filter(t=>!t.gone).map(t=>[t.r,t.c,t.v]),s:score,w:won};api.save()}
-  function load(){const g=st.game;if(!g||!g.t||!g.t.length)return false;tiles=g.t.map(([r,c,v])=>({id:nextId++,r,c,v}));score=g.s||0;won=!!g.w;over=false;return true}
+  function fresh(){rnd=api.begin({});tiles=[];score=0;over=false;won=false;hist=[];practice=false;addTile();addTile();save();draw()}
+  // the board as plain data: for saving, and for undo
+  const snap=()=>({t:tiles.filter(t=>!t.gone).map(t=>[t.r,t.c,t.v]),s:score,w:won});
+  function save(){st.game=over&&!practice?null:Object.assign(snap(),{p:practice,h:hist.slice(-20)});api.save()}
+  function restore(g){tiles=g.t.map(([r,c,v])=>({id:nextId++,r,c,v}));score=g.s||0;won=!!g.w}
+  function load(){const g=st.game;if(!g||!g.t||!g.t.length)return false;restore(g);over=false;practice=!!g.p;hist=Array.isArray(g.h)?g.h:[];if(!canMove())over=true;return true}
+  // undo: step back one move. The first one makes the rest of this game practice, so it can't set a best score.
+  function undo(){if(busy||!hist.length)return;clearTimeout(timer);const g=hist.pop();board.querySelectorAll(".t48-over").forEach(x=>x.remove());
+    if(!practice){practice=true;api.toast(`<span class="gmtemo">↩️</span><span><b>Practice game</b><br>You used undo, so this game won't count toward your best score. Start a new game to play for real.</span>`)}
+    els.forEach(el=>el.remove());els.clear();restore(g);over=false;draw();save()}
   function place(el,t){el.style.left=t.c*25+"%";el.style.top=t.r*25+"%"}
   function look(el,t){const [bg,fg]=COLORS[t.v]||["#000","#ffd800"];el.style.background=bg;el.style.color=fg;el.textContent=t.v;el.classList.toggle("big",t.v>=128&&t.v<1024);el.classList.toggle("huge",t.v>=1024)}
   function draw(){const live=new Set();tiles.forEach(t=>{if(t.gone)return;live.add(t.id);let el=els.get(t.id);
@@ -41,40 +48,45 @@ mount(api){
       else if(t.merged){el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
       place(el,t);look(el,t);t.fresh=false;t.merged=false});
     els.forEach((el,id)=>{if(!live.has(id)){el.remove();els.delete(id)}});
-    api.root.querySelector("#t48s").textContent=score.toLocaleString("en-US");api.root.querySelector("#t48b").textContent=Math.max(st.best||0,score).toLocaleString("en-US");
-    api.status(`Score: ${score.toLocaleString("en-US")}`,`Top tile: ${Math.max(0,...tiles.filter(t=>!t.gone).map(t=>t.v))}`)}
+    api.root.querySelector("#t48s").textContent=score.toLocaleString("en-US");api.root.querySelector("#t48b").textContent=(practice?st.best||0:Math.max(st.best||0,score)).toLocaleString("en-US");
+    api.root.querySelector("#t48sl").textContent=practice?"PRACTICE":"SCORE";const ub=api.bar.querySelector('[data-t48="undo"]');if(ub)ub.disabled=!hist.length;
+    api.status(`${practice?"Practice · ":""}Score: ${score.toLocaleString("en-US")}`,`Top tile: ${Math.max(0,...tiles.filter(t=>!t.gone).map(t=>t.v))}`)}
   function canMove(){for(let r=0;r<N;r++)for(let c=0;c<N;c++){const t=at(r,c);if(!t)return true;const a=at(r,c+1),b=at(r+1,c);if(a&&a.v===t.v||b&&b.v===t.v)return true}return false}
   function move(dir){if(over||busy)return;const dr={up:-1,down:1,left:0,right:0}[dir],dc={left:-1,right:1,up:0,down:0}[dir];
     const order=[...Array(N).keys()];if(dr>0||dc>0)order.reverse();let moved=false,gained=0;const merges=[];
-    tiles.forEach(t=>t.done=false);
+    const prev=snap();tiles.forEach(t=>t.done=false);
     for(const a of order)for(const b of order){const r=dr?a:b,c=dr?b:a,t=at(r,c);if(!t)continue;
       let nr=r,nc=c;while(true){const rr=nr+dr,cc=nc+dc;if(rr<0||rr>=N||cc<0||cc>=N)break;const o=at(rr,cc);
         if(!o){nr=rr;nc=cc;continue}if(o.v===t.v&&!o.done&&!t.done){nr=rr;nc=cc;merges.push([t,o])}break}
       if(nr!==r||nc!==c){moved=true;const m=merges.find(x=>x[0]===t&&x[1].r===nr&&x[1].c===nc);if(m){m[1].done=true;t.gone=true;t.r=nr;t.c=nc;t.into=m[1]}else{t.r=nr;t.c=nc}}}
-    if(!moved)return;busy=true;
+    if(!moved)return;busy=true;hist.push(prev);if(hist.length>20)hist.shift();
     // slide the merging tiles onto their partners first, then combine them
     tiles.filter(t=>t.gone).forEach(t=>{const el=els.get(t.id);if(el)place(el,t)});
     tiles.filter(t=>!t.gone).forEach(t=>{const el=els.get(t.id);if(el)place(el,t)});
     timer=setTimeout(()=>{merges.forEach(([t,o])=>{if(!t.gone)return;o.v*=2;o.merged=true;gained+=o.v});tiles=tiles.filter(t=>!t.gone);
       score+=gained;if(gained)api.sound("tap");addTile();draw();busy=false;
       const top=Math.max(...tiles.map(t=>t.v));
-      if(top>=2048&&!won){won=true;st.won=(st.won||0)+1;api.sound("win");banner(`<big>2048!</big><div>You made the 2048 tile.</div><div class="actions"><button class="btn default" type="button" data-t48="go">Keep going</button></div>`)}
+      if(top>=2048&&!won){won=true;if(!practice)st.won=(st.won||0)+1;api.sound("win");banner(`<big>2048!</big><div>You made the 2048 tile.</div><div class="actions"><button class="btn default" type="button" data-t48="go">Keep going</button></div>`)}
       if(!canMove())end();save()},api.reduced()?0:SLIDE)}
   function banner(h){const d=document.createElement("div");d.className="t48-over";d.innerHTML=`<div class="dlg"><div class="dlg-body">${h}</div></div>`;board.appendChild(d);const b=d.querySelector(".btn");if(b)b.focus({preventScroll:true})}
-  function end(){over=true;const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;
-    const r=api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400))+(top>=2048?20:0),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}});save();api.sound("lose");
-    banner(`<big>Game over</big><div>Score: <b>${score.toLocaleString("en-US")}</b> &middot; top tile ${top}</div>${r.best?"<div><b>New best score!</b></div>":""}${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<div class="actions"><button class="btn default" type="button" data-t48="new">Play again</button></div>`)}
-  api.on(document,"keydown",e=>{if(!api.active()||e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;const d=KEYS[e.key]||KEYS[e.key.toLowerCase()];if(d){e.preventDefault();move(d)}});
+  function end(){over=true;const top=Math.max(...tiles.map(t=>t.v));let r={};
+    // a practice game (undo was used) doesn't touch the best score, top tile, XP or challenges
+    if(!practice){if(top>(st.top||0))st.top=top;r=api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400))+(top>=2048?20:0),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}})}
+    save();api.sound("lose");
+    banner(`<big>Game over</big><div>Score: <b>${score.toLocaleString("en-US")}</b> &middot; top tile ${top}</div>${practice?`<div class="note">Practice game: not counted toward your best.</div>`:r.best?"<div><b>New best score!</b></div>":""}${r.xp?`<div class="note">+${r.xp} XP</div>`:""}<div class="actions"><button class="btn" type="button" data-t48="undo">Undo</button><button class="btn default" type="button" data-t48="new">Play again</button></div>`)}
+  api.on(document,"keydown",e=>{if(!api.active()||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key.toLowerCase()==="z"&&(e.ctrlKey||e.metaKey)||e.key.toLowerCase()==="u"&&!e.ctrlKey&&!e.metaKey){e.preventDefault();undo();return}if(e.ctrlKey||e.metaKey)return;
+    const d=KEYS[e.key]||KEYS[e.key.toLowerCase()];if(d){e.preventDefault();move(d)}});
   let t0=null;
   api.on(board,"pointerdown",e=>{if(e.target.closest("button"))return;t0=[e.clientX,e.clientY]});
   api.on(board,"pointerup",e=>{if(!t0)return;const dx=e.clientX-t0[0],dy=e.clientY-t0[1];t0=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;move(Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up"))});
   api.on(board,"touchmove",e=>e.preventDefault(),{passive:false});
-  const onNew=e=>{const b=e.target.closest("[data-t48]");if(!b)return;if(b.dataset.t48==="go"){b.closest(".t48-over").remove();return}
-    // giving up partway still counts the score
-    if(!over&&score>0&&tiles.length){const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400)),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}})}
+  const onNew=e=>{const b=e.target.closest("[data-t48]");if(!b)return;if(b.dataset.t48==="go"){b.closest(".t48-over").remove();return}if(b.dataset.t48==="undo"){undo();return}
+    // giving up partway still counts the score (not for a practice game)
+    if(!over&&!practice&&score>0&&tiles.length){const top=Math.max(...tiles.map(t=>t.v));if(top>(st.top||0))st.top=top;api.result({score,text:score.toLocaleString("en-US"),xp:Math.min(30,Math.round(score/400)),ch:{v:score,text:score.toLocaleString("en-US"),higher:true}})}
     clearTimeout(timer);busy=false;board.querySelectorAll(".t48-over").forEach(x=>x.remove());fresh()};
   api.on(api.root,"click",onNew);api.on(api.bar,"click",onNew);
-  if(!api.seeded()&&load())draw();else fresh();
+  if(!api.seeded()&&load()){draw();if(over)end()}else fresh();
   return {unmount(){clearTimeout(timer)}};
 }};
 })();
